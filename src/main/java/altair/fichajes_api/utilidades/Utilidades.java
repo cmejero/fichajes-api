@@ -1,0 +1,39 @@
+package altair.fichajes_api.utilidades;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
+/**
+ * Clase con metodos que usaremos varias veces en la aplicación
+ */
+public class Utilidades {
+
+	/**
+	 * Método que devuelve el nombre del archivo de log basado en la fecha actual.
+	 * 
+	 * @return el nombre del archivo de log
+	 */
+	public static final String nombreArchivoLog() {
+		try {
+			LocalDate fechaActual = LocalDate.now();
+			String fechaStr = fechaActual.format(DateTimeFormatter.ofPattern("ddMMyyyy"));
+			return "log-" + fechaStr + ".txt";
+		} catch (Exception e) {
+			return "log-error.txt";
+		}
+	}
+
+	/**
+	 * Método que devuelve el nombre de la carpeta basada en la fecha actual.
+	 * 
+	 * @return el nombre de la carpeta basada en la fecha
+	 */
+	public static final String nombreCarpetaFecha() {
+		try {
+			LocalDate fechaActual = LocalDate.now();
+			return fechaActual.format(DateTimeFormatter.ofPattern("ddMMyyyy"));
+		} catch (Exception e) {
+			return "errorFecha";
+		}
+	}
+}
