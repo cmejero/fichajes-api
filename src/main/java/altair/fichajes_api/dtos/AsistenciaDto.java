@@ -6,8 +6,8 @@ import java.time.LocalDateTime;
 public class AsistenciaDto {
 	private Long idAsistencia;
 	private Long matriculacionId;
-	private String nombreAlumno;
-	private String apellidoAlumno;
+	private Long alumnoId;
+	private String nombreCompletoAlumno;
 	private String nombreCurso;
 	private String nombreGrupo;
 	private LocalDate fecha;
@@ -16,6 +16,7 @@ public class AsistenciaDto {
 	private LocalDateTime horaSalida;
 	private String justificarModificacion;
 	private String estado;
+	private String anioEscolar;
 
 	public Long getIdAsistencia() {
 		return idAsistencia;
@@ -32,22 +33,25 @@ public class AsistenciaDto {
 	public void setMatriculacionId(Long matriculacionId) {
 		this.matriculacionId = matriculacionId;
 	}
+	
 
-	public String getNombreAlumno() {
-		return nombreAlumno;
+	public Long getAlumnoId() {
+		return alumnoId;
 	}
 
-	public void setNombreAlumno(String nombreAlumno) {
-		this.nombreAlumno = nombreAlumno;
+	public void setAlumnoId(Long alumnoId) {
+		this.alumnoId = alumnoId;
 	}
 
-	public String getApellidoAlumno() {
-		return apellidoAlumno;
+	public String getNombreCompletoAlumno() {
+		return nombreCompletoAlumno;
 	}
 
-	public void setApellidoAlumno(String apellidoAlumno) {
-		this.apellidoAlumno = apellidoAlumno;
+	public void setNombreCompletoAlumno(String nombreCompletoAlumno) {
+		this.nombreCompletoAlumno = nombreCompletoAlumno;
 	}
+
+
 
 	public String getNombreCurso() {
 		return nombreCurso;
@@ -112,5 +116,15 @@ public class AsistenciaDto {
 	public void setEstado(String estado) {
 		this.estado = estado;
 	}
+
+	public String getAnioEscolar() {
+		return anioEscolar;
+	}
+
+	public void setAnioEscolar(String anioEscolar) {
+		this.anioEscolar = anioEscolar;
+	}
+	
+	
 
 }

@@ -3,6 +3,8 @@ package altair.fichajes_api.entidad;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -24,6 +26,7 @@ public class AsistenciaEntidad {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "matriculacion_id")
+    @JsonBackReference
     private MatriculacionEntidad matriculacion;
 
     @Column(name = "fecha", nullable = false)

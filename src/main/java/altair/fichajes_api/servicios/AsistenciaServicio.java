@@ -4,7 +4,9 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -20,6 +22,7 @@ import altair.fichajes_api.repositorios.AsistenciaInterfaz;
 import altair.fichajes_api.repositorios.CursoInterfaz;
 import altair.fichajes_api.repositorios.GrupoInterfaz;
 import altair.fichajes_api.repositorios.MatriculacionInterfaz;
+import jakarta.annotation.PostConstruct;
 
 @Service
 public class AsistenciaServicio {
@@ -78,27 +81,74 @@ public class AsistenciaServicio {
 	    List<MatriculacionEntidad> matriculas = matriculacionInterfaz.findByCursoAndGrupo(cursoEntidad, grupoEntidad);
 
 	    return matriculas.stream()
-	        .map(m -> {
-	            Optional<AsistenciaEntidad> asistenciaOpt = asistenciaInterfaz
-	                    .findByMatriculacion_IdMatriculacionAndFecha(m.getIdMatriculacion(), fecha);
+	            .filter(m -> {
+	                // Convertir anioEscolar a fechas
+	                if (m.getAnioEscolar() == null || !m.getAnioEscolar().contains("-")) return false;
+	                String[] partes = m.getAnioEscolar().split("-");
+	                int anioInicio = Integer.parseInt(partes[0]);
+	                int anioFin = Integer.parseInt(partes[1]);
 
-	            // Si existe, devolvemos el DTO normal
-	            if (asistenciaOpt.isPresent()) {
-	                return mapearADto(asistenciaOpt.get());
-	            }
+	                LocalDate inicio = LocalDate.of(anioInicio, 9, 1);
+	                LocalDate fin = LocalDate.of(anioFin, 6, 30);
 
-	            // Si NO existe, creamos una asistencia "FALTA" en la base de datos
-	            AsistenciaEntidad nuevaAsistencia = new AsistenciaEntidad();
-	            nuevaAsistencia.setMatriculacion(m);
-	            nuevaAsistencia.setFecha(fecha);
-	            nuevaAsistencia.setEstado("FALTA");
-	            nuevaAsistencia.setFechaModificacion(LocalDateTime.now());
+	                // Solo matriculaciones cuyo rango contenga la fecha
+	                return !fecha.isBefore(inicio) && !fecha.isAfter(fin);
+	            })
+	            .map(m -> {
+	                Optional<AsistenciaEntidad> asistenciaOpt = asistenciaInterfaz
+	                        .findByMatriculacion_IdMatriculacionAndFecha(m.getIdMatriculacion(), fecha);
 
-	            AsistenciaEntidad guardada = asistenciaInterfaz.save(nuevaAsistencia);
-	            return mapearADto(guardada);
-	        })
-	        .collect(Collectors.toList());
+	                if (asistenciaOpt.isPresent()) {
+	                    return mapearADto(asistenciaOpt.get());
+	                }
+
+	                // Si no existe, crear asistencia "FALTA"
+	                AsistenciaEntidad nuevaAsistencia = new AsistenciaEntidad();
+	                nuevaAsistencia.setMatriculacion(m);
+	                nuevaAsistencia.setFecha(fecha);
+	                nuevaAsistencia.setEstado("FALTA");
+	                nuevaAsistencia.setFechaModificacion(LocalDateTime.now());
+
+	                AsistenciaEntidad guardada = asistenciaInterfaz.save(nuevaAsistencia);
+	                return mapearADto(guardada);
+	            })
+	            .collect(Collectors.toList());
 	}
+
+
+
+	
+	public List<AsistenciaDto> obtenerAsistenciasPorCursoGrupoYFecha(String curso, String grupo, LocalDate fecha) {
+	    CursoEntidad cursoEntidad = cursoInterfaz.findByNombreCurso(curso);
+	    GrupoEntidad grupoEntidad = grupoInterfaz.findByNombreGrupo(grupo);
+
+	    if (cursoEntidad == null || grupoEntidad == null) {
+	        throw new RuntimeException("Curso o grupo no encontrados");
+	    }
+
+	    List<MatriculacionEntidad> matriculas = matriculacionInterfaz.findByCursoAndGrupo(cursoEntidad, grupoEntidad);
+
+	    return matriculas.stream()
+	            .map(m -> {
+	                Optional<AsistenciaEntidad> asistenciaOpt = asistenciaInterfaz
+	                        .findByMatriculacion_IdMatriculacionAndFecha(m.getIdMatriculacion(), fecha);
+
+	                if (asistenciaOpt.isPresent()) {
+	                    return mapearADto(asistenciaOpt.get());
+	                }
+
+	                // Crear "FALTA" si no existe
+	                AsistenciaEntidad nuevaAsistencia = new AsistenciaEntidad();
+	                nuevaAsistencia.setMatriculacion(m);
+	                nuevaAsistencia.setFecha(fecha);
+	                nuevaAsistencia.setEstado("FALTA");
+	                nuevaAsistencia.setFechaModificacion(LocalDateTime.now());
+
+	                return mapearADto(asistenciaInterfaz.save(nuevaAsistencia));
+	            })
+	            .collect(Collectors.toList());
+	}
+
 
 
 	public void cerrarAsistenciasDelDia(LocalDate fecha) {
@@ -117,42 +167,73 @@ public class AsistenciaServicio {
 		generarFaltas(fecha);
 	}
 
-	// Consultar por matrícula
-	public List<AsistenciaDto> obtenerPorMatricula(Long matriculacionId) {
-		return asistenciaInterfaz.findByMatriculacion_IdMatriculacion(matriculacionId).stream().map(this::mapearADto)
-				.collect(Collectors.toList());
-	}
 
 	public List<AsistenciaDto> obtenerTodasAsistencias() {
 		return asistenciaInterfaz.findAll().stream().map(this::mapearADto).toList();
 	}
 
-	public Optional<AsistenciaDto> obtenerPorMatriculaYFecha(Long matriculacionId, LocalDate fecha) {
-		return asistenciaInterfaz.findByMatriculacion_IdMatriculacionAndFecha(matriculacionId, fecha)
-				.map(this::mapearADto);
+	public List<AsistenciaDto> obtenerPorRango(Long alumnoId, LocalDate desde, LocalDate hasta) {
+	    return asistenciaInterfaz
+	            .findByMatriculacion_Alumno_IdAlumnoAndFechaBetween(alumnoId, desde, hasta)
+	            .stream()
+	            .map(this::mapearADto)
+	            .toList();
 	}
 
-	public List<AsistenciaDto> obtenerPorRango(Long matriculacionId, LocalDate desde, LocalDate hasta) {
-		return asistenciaInterfaz.findByMatriculacion_IdMatriculacionAndFechaBetween(matriculacionId, desde, hasta)
-				.stream().map(this::mapearADto).toList();
+	public List<AsistenciaDto> obtenerPorAlumnoEstadoYAnio(Long alumnoId, String estado, String anioEscolar) {
+
+	    String[] partes = anioEscolar.split("/");
+	    int anioInicio = Integer.parseInt(partes[0]);
+	    int anioFin = Integer.parseInt(partes[1]);
+
+	    LocalDate desde = LocalDate.of(anioInicio, 9, 1);
+	    LocalDate hasta = LocalDate.of(anioFin, 6, 30);
+
+	    List<AsistenciaEntidad> lista = asistenciaInterfaz
+	            .findByMatriculacion_Alumno_IdAlumnoAndEstadoAndFechaBetween(
+	                    alumnoId, estado, desde, hasta);
+
+	    return lista.stream()
+	            .map(this::mapearADto)
+	            .toList();
 	}
 
-	public Long contarAsistencias(Long matriculacionId) {
-		return asistenciaInterfaz.countByMatriculacion_IdMatriculacion(matriculacionId);
-	}
 
 	// Consultar por fecha
 	public List<AsistenciaDto> obtenerPorFecha(LocalDate fecha) {
 		return asistenciaInterfaz.findByFecha(fecha).stream().map(this::mapearADto).collect(Collectors.toList());
 	}
 
+	
+	
+	public Map<String, Integer> obtenerConteoEstados(Long alumnoId, LocalDate desde, LocalDate hasta) {
+	    List<AsistenciaEntidad> asistencias = asistenciaInterfaz
+	            .findByMatriculacion_Alumno_IdAlumnoAndFechaBetween(alumnoId, desde, hasta);
+
+	    Map<String, Integer> conteo = new HashMap<>();
+	    conteo.put("PRESENTE", 0);
+	    conteo.put("COMPLETA", 0);
+	    conteo.put("SIN SALIDA", 0);
+	    conteo.put("FALTA", 0);
+
+	    for (AsistenciaEntidad a : asistencias) {
+	        String estado = a.getEstado();
+	        conteo.put(estado, conteo.getOrDefault(estado, 0) + 1);
+	    }
+
+	    return conteo;
+	}
+
 	// Mapeo a DTO
 	private AsistenciaDto mapearADto(AsistenciaEntidad entidad) {
 	    AsistenciaDto dto = new AsistenciaDto();
+
 	    dto.setIdAsistencia(entidad.getIdAsistencia());
 	    dto.setMatriculacionId(entidad.getMatriculacion().getIdMatriculacion());
-	    dto.setNombreAlumno(entidad.getMatriculacion().getAlumno().getNombreAlumno());
-	    dto.setApellidoAlumno(entidad.getMatriculacion().getAlumno().getApellidoAlumno());
+	    dto.setAlumnoId(entidad.getMatriculacion().getAlumno().getIdAlumno());
+	    String nombre = entidad.getMatriculacion().getAlumno().getNombreAlumno();
+	    String apellido = entidad.getMatriculacion().getAlumno().getApellidoAlumno();
+	    dto.setNombreCompletoAlumno(nombre + " " + apellido);
 	    dto.setNombreCurso(entidad.getMatriculacion().getCurso().getNombreCurso());
 	    dto.setNombreGrupo(entidad.getMatriculacion().getGrupo().getNombreGrupo());
 	    dto.setFecha(entidad.getFecha());
@@ -165,32 +246,25 @@ public class AsistenciaServicio {
 	    return dto;
 	}
 
-	
 
+	
 
 	public boolean modificarAsistencia(Long idAsistencia, AsistenciaDto asistenciaDto) {
 	    boolean esModificado = false;
 
 	    try {
-	        // Buscar la asistencia por ID
-	        AsistenciaEntidad asistencia = asistenciaInterfaz.findById(idAsistencia)
-	                .orElse(null);
+	        AsistenciaEntidad asistencia = asistenciaInterfaz.findById(idAsistencia).orElse(null);
+	        if (asistencia == null) return false;
 
-	        if (asistencia == null) {
-	            return false; // No existe
-	        }
-
-	        // Sobrescribir todos los campos del DTO, incluso null
 	        asistencia.setHoraEntrada(asistenciaDto.getHoraEntrada());
 	        asistencia.setHoraSalida(asistenciaDto.getHoraSalida());
-	        asistencia.setEstado(asistenciaDto.getEstado());
+
+	        // Calcula automáticamente el estado según la lógica
+	        asistencia.setEstado(calcularEstado(asistencia.getHoraEntrada(), asistencia.getHoraSalida()));
+
 	        asistencia.setJustificar_modificacion(asistenciaDto.getJustificarModificacion());
 	        asistencia.setFechaModificacion(LocalDateTime.now());
 
-	        // Fecha de modificación siempre se actualiza
-	        asistencia.setFechaModificacion(LocalDateTime.now());
-
-	        // Guardar cambios
 	        asistenciaInterfaz.save(asistencia);
 	        esModificado = true;
 
@@ -200,6 +274,7 @@ public class AsistenciaServicio {
 
 	    return esModificado;
 	}
+
 
 
 	public void generarFaltas(LocalDate fecha) {
@@ -226,5 +301,49 @@ public class AsistenciaServicio {
 			}
 		}
 	}
+	
+	private String calcularEstado(LocalDateTime horaEntrada, LocalDateTime horaSalida) {
+	    if (horaEntrada == null) {
+	        return "FALTA";
+	    } else if (horaEntrada != null && horaSalida == null) {
+	        LocalDateTime ahora = LocalDateTime.now();
+	        LocalDateTime cierre = horaEntrada.toLocalDate().atTime(23, 0);
+
+	        if (ahora.isBefore(cierre)) {
+	            return "PRESENTE";
+	        } else {
+	            return "SIN SALIDA";
+	        }
+	    } else {
+	        return "COMPLETA";
+	    }
+	}
+
+
+	@PostConstruct
+	public void inicializarAsistencias() {
+	    LocalDate hoy = LocalDate.now();
+
+	    // Traer solo las asistencias existentes con horaEntrada y sin horaSalida
+	    List<AsistenciaEntidad> pendientes = asistenciaInterfaz.findByHoraEntradaIsNotNullAndHoraSalidaIsNull();
+
+	    for (AsistenciaEntidad a : pendientes) {
+	        LocalDate fechaAsistencia = a.getFecha();
+	        LocalDateTime horaCierre = LocalDateTime.of(fechaAsistencia, LocalTime.of(23, 0));
+
+	        // Solo actualizar si la fecha ya pasó o es hoy después de las 23:00
+	        if (fechaAsistencia.isBefore(hoy) || 
+	            (fechaAsistencia.isEqual(hoy) && LocalDateTime.now().isAfter(horaCierre))) {
+	            a.setHoraSalida(horaCierre);
+	            a.setEstado("SIN SALIDA");
+	            a.setFechaModificacion(LocalDateTime.now());
+	            asistenciaInterfaz.save(a);
+	        }
+	    }
+	}
+
+
+
+
 
 }

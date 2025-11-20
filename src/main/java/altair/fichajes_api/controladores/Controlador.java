@@ -3,6 +3,7 @@ package altair.fichajes_api.controladores;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -306,9 +307,10 @@ public class Controlador {
 	}
 
 	@GetMapping("/matriculaciones")
-	public ResponseEntity<?> listarMatriculaciones() {
-		return ResponseEntity.ok(matriculacionServicio.obtenerTodas());
+	public List<MatriculacionDto> listarMatriculaciones() {
+	    return matriculacionServicio.obtenerTodasDto();
 	}
+
 
 	@GetMapping("/matriculacion/{idMatriculacion}")
 	public ResponseEntity<?> obtenerPorId(@PathVariable Long idMatriculacion) {
@@ -398,6 +400,17 @@ public class Controlador {
 	    return ResponseEntity.ok(asistenciaServicio.obtenerAsistenciaPorCursoYGrupoEnFecha(curso, grupo, hoy));
 	}
 
+	@GetMapping("/asistencia/curso-grupo")
+	public ResponseEntity<List<AsistenciaDto>> obtenerAsistenciasPorCursoGrupoYFechaUsuario(
+	        @RequestParam String curso,
+	        @RequestParam String grupo,
+	        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
+
+	    List<AsistenciaDto> asistencias = asistenciaServicio
+	            .obtenerAsistenciasPorCursoGrupoYFecha(curso, grupo, fecha);
+	    return ResponseEntity.ok(asistencias);
+	}
+
 	
 	
 	@GetMapping("/asistencias")
@@ -405,10 +418,7 @@ public class Controlador {
 	    return ResponseEntity.ok(asistenciaServicio.obtenerTodasAsistencias());
 	}
 
-	@GetMapping("/asistencia/matricula/{idMatricula}")
-	public ResponseEntity<?> listarPorMatricula(@PathVariable Long idMatricula) {
-		return ResponseEntity.ok(asistenciaServicio.obtenerPorMatricula(idMatricula));
-	}
+
 
 	@GetMapping("/asistencia/fecha/{fecha}")
 	public ResponseEntity<?> listarPorFecha(
@@ -416,29 +426,41 @@ public class Controlador {
 		return ResponseEntity.ok(asistenciaServicio.obtenerPorFecha(fecha));
 	}
 	
-	@GetMapping("/asistencia/matricula/{idMatricula}/fecha/{fecha}")
-	public ResponseEntity<?> obtenerPorMatriculaYFecha(
-	        @PathVariable Long idMatricula,
-	        @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
-	    return ResponseEntity.ok(asistenciaServicio.obtenerPorMatriculaYFecha(idMatricula, fecha));
+	@GetMapping("/asistencia/alumno-estado")
+	public ResponseEntity<List<AsistenciaDto>> obtenerPorAlumnoEstadoYAnio(
+	        @RequestParam Long alumnoId,
+	        @RequestParam String estado,
+	        @RequestParam String anioEscolar) {
+
+	    List<AsistenciaDto> lista = asistenciaServicio.obtenerPorAlumnoEstadoYAnio(alumnoId, estado, anioEscolar);
+	    return ResponseEntity.ok(lista);
 	}
+	
+	
+
 
 	
-	@GetMapping("/asistencia/rango/{matriculacionId}")
+	@GetMapping("/asistencia/rango/{alumnoId}")
 	public ResponseEntity<List<AsistenciaDto>> obtenerPorRango(
-	        @PathVariable Long matriculacionId,
+	        @PathVariable Long alumnoId,
 	        @RequestParam("desde") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
 	        @RequestParam("hasta") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
 	    
-	    List<AsistenciaDto> asistencias = asistenciaServicio.obtenerPorRango(matriculacionId, desde, hasta);
+	    List<AsistenciaDto> asistencias = asistenciaServicio.obtenerPorRango(alumnoId, desde, hasta);
 	    return ResponseEntity.ok(asistencias);
 	}
 
-	
-	@GetMapping("/asistencia/contar/{idMatricula}")
-	public ResponseEntity<Long> contarAsistencias(@PathVariable Long idMatricula) {
-	    return ResponseEntity.ok(asistenciaServicio.contarAsistencias(idMatricula));
+	@GetMapping("/asistencia/conteoEstados/{alumnoId}")
+	public ResponseEntity<Map<String, Integer>> obtenerConteoEstados(
+	        @PathVariable Long alumnoId,
+	        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+	        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+
+	    Map<String, Integer> conteo = asistenciaServicio.obtenerConteoEstados(alumnoId, desde, hasta);
+	    return ResponseEntity.ok(conteo);
 	}
+
+	
 
 
 

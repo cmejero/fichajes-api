@@ -3,6 +3,8 @@ package altair.fichajes_api.entidad;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,19 +18,21 @@ import jakarta.persistence.Table;
 @Table(name = "curso")
 public class CursoEntidad {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_curso")
-    private Long idCurso;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id_curso")
+	private Long idCurso;
 
-    @Column(name = "nombre_curso", nullable = false, length = 50)
-    private String nombreCurso;
+	@Column(name = "nombre_curso", nullable = false, length = 50)
+	private String nombreCurso;
 
-    @OneToMany(mappedBy = "curso", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<GrupoEntidad> grupos = new ArrayList<>();
+	@OneToMany(mappedBy = "curso", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<GrupoEntidad> grupos = new ArrayList<>();
 
-    @OneToMany(mappedBy = "curso", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MatriculacionEntidad> matriculaciones = new ArrayList<>();
+	@OneToMany(mappedBy = "curso", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<MatriculacionEntidad> matriculaciones = new ArrayList<>();
 
 	public Long getIdCurso() {
 		return idCurso;
@@ -62,6 +66,4 @@ public class CursoEntidad {
 		this.matriculaciones = matriculacion;
 	}
 
-  
-   
 }

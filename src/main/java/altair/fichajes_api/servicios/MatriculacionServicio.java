@@ -43,9 +43,21 @@ public class MatriculacionServicio {
     }
 
     // Obtener todas las matriculaciones
-    public List<MatriculacionEntidad> obtenerTodas() {
-        return matriculacionInterfaz.findAll();
+    public List<MatriculacionDto> obtenerTodasDto() {
+        List<MatriculacionEntidad> matriculas = matriculacionInterfaz.findAll();
+
+        return matriculas.stream().map(m -> {
+            MatriculacionDto dto = new MatriculacionDto();
+            dto.setIdMatriculacion(m.getIdMatriculacion());
+            dto.setAlumnoId(m.getAlumno().getIdAlumno());
+            dto.setCursoId(m.getCurso().getIdCurso());
+            dto.setGrupoId(m.getGrupo().getIdGrupo());
+            dto.setAnioEscolar(m.getAnioEscolar());
+            dto.setUidLlave(m.getUidLlave());
+            return dto;
+        }).toList();
     }
+
 
     // Obtener una por ID
     public Optional<MatriculacionEntidad> obtenerPorId(Long id) {
