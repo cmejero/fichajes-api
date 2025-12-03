@@ -2,29 +2,30 @@ package altair.fichajes_api.dtos;
 
 import java.time.LocalDate;
 
+/**
+ * Clase que se encarga de los campos de festivo
+ */
 public class FestivoDto {
 
+	
+	private Long id;
+	public Long getId() {
+		return id;
+	}
+	public void setId(Long id) {
+		this.id = id;
+	}
 	private LocalDate fecha;
-	private String descripcion;
-	private String municipio;
+	
+	
+	
 	public LocalDate getFecha() {
 		return fecha;
 	}
 	public void setFecha(LocalDate fecha) {
 		this.fecha = fecha;
 	}
-	public String getDescripcion() {
-		return descripcion;
-	}
-	public void setDescripcion(String descripcion) {
-		this.descripcion = descripcion;
-	}
-	public String getMunicipio() {
-		return municipio;
-	}
-	public void setMunicipio(String municipio) {
-		this.municipio = municipio;
-	} 
+	
 	
 	
 	

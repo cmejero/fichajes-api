@@ -13,6 +13,11 @@ import altair.fichajes_api.repositorios.CursoInterfaz;
 import altair.fichajes_api.repositorios.GrupoInterfaz;
 import altair.fichajes_api.repositorios.MatriculacionInterfaz;
 
+/**
+ * Servicio encargado de la gestión de matriculaciones.
+ * Proporciona métodos para crear, obtener y eliminar matriculaciones,
+ * así como para convertir entidades a DTOs.
+ */
 @Service
 public class MatriculacionServicio {
 
@@ -28,7 +33,11 @@ public class MatriculacionServicio {
     @Autowired
     private GrupoInterfaz grupoInterfaz;
 
-    // Crear nueva matriculación
+    /**
+     * Crea una nueva matriculación a partir de un DTO.
+     * @param dto DTO con los datos de la matriculación
+     * @return Entidad de matriculación guardada
+     */
     public MatriculacionEntidad crearMatriculacion(MatriculacionDto dto) {
         MatriculacionEntidad matricula = new MatriculacionEntidad();
 
@@ -42,7 +51,10 @@ public class MatriculacionServicio {
         return matriculacionInterfaz.save(matricula);
     }
 
-    // Obtener todas las matriculaciones
+    /**
+     * Obtiene todas las matriculaciones y las convierte a DTOs.
+     * @return Lista de DTOs de matriculaciones
+     */
     public List<MatriculacionDto> obtenerTodasDto() {
         List<MatriculacionEntidad> matriculas = matriculacionInterfaz.findAll();
 
@@ -58,13 +70,20 @@ public class MatriculacionServicio {
         }).toList();
     }
 
-
-    // Obtener una por ID
+    /**
+     * Obtiene una matriculación por su ID.
+     * @param id ID de la matriculación
+     * @return Optional con la entidad de matriculación si existe
+     */
     public Optional<MatriculacionEntidad> obtenerPorId(Long id) {
         return matriculacionInterfaz.findById(id);
     }
 
-    // Eliminar matriculación
+    /**
+     * Elimina una matriculación por su ID.
+     * @param id ID de la matriculación a eliminar
+     * @return true si se eliminó, false si no existía
+     */
     public boolean eliminarMatriculacion(Long id) {
         if (matriculacionInterfaz.existsById(id)) {
             matriculacionInterfaz.deleteById(id);

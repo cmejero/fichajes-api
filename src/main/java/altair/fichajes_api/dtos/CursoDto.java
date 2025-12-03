@@ -1,5 +1,8 @@
 package altair.fichajes_api.dtos;
 
+/**
+ * Clase que se encarga de los campos de curso
+ */
 public class CursoDto {
 	private Long idCurso;
 	private String nombreCurso;

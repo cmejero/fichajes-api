@@ -19,9 +19,9 @@ public class FestivoEntidad {
 
     @Column(nullable = false)
     private LocalDate fecha;
-
-    @Column(nullable = false)
-    private String nombre;
+    
+    @Column(nullable = false, name= "nombre")
+    private String  nombre = "Festivo";
 
 	public Long getId() {
 		return id;
@@ -39,14 +39,7 @@ public class FestivoEntidad {
 		this.fecha = fecha;
 	}
 
-	public String getNombre() {
-		return nombre;
-	}
 
-	public void setNombre(String nombre) {
-		this.nombre = nombre;
-	}
-    
     
     
     

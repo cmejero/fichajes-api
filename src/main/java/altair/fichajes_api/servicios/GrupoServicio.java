@@ -13,9 +13,12 @@ import altair.fichajes_api.entidad.GrupoEntidad;
 import altair.fichajes_api.repositorios.CursoInterfaz;
 import altair.fichajes_api.repositorios.GrupoInterfaz;
 
+/**
+ * Servicio encargado de la gestión de grupos.
+ * Proporciona métodos para obtener, guardar, borrar y mapear grupos entre DTOs y entidades.
+ */
 @Service
 public class GrupoServicio {
-
 
     @Autowired
     private GrupoInterfaz grupoInterfaz;
@@ -23,7 +26,11 @@ public class GrupoServicio {
     @Autowired
     private CursoInterfaz cursoInterfaz;
 
-    // Mapear entidad -> DTO
+    /**
+     * Convierte una entidad de grupo a su DTO correspondiente.
+     * @param grupo Entidad de grupo
+     * @return DTO de grupo
+     */
     public GrupoDto mapearAGrupoDTO(GrupoEntidad grupo) {
         GrupoDto dto = new GrupoDto();
         dto.setIdGrupo(grupo.getIdGrupo());
@@ -32,7 +39,11 @@ public class GrupoServicio {
         return dto;
     }
 
-    // Mapear DTO -> Entidad
+    /**
+     * Convierte un DTO de grupo a su entidad correspondiente.
+     * @param dto DTO de grupo
+     * @return Entidad de grupo
+     */
     private GrupoEntidad mapearADtoAEntidad(GrupoDto dto) {
         GrupoEntidad grupo = new GrupoEntidad();
         grupo.setIdGrupo(dto.getIdGrupo());
@@ -44,7 +55,10 @@ public class GrupoServicio {
         return grupo;
     }
 
-    // Obtener todos los grupos
+    /**
+     * Obtiene todos los grupos existentes.
+     * @return Lista de DTOs de grupos
+     */
     public ArrayList<GrupoDto> obtenerTodosGrupos() {
         List<GrupoEntidad> grupos = grupoInterfaz.findAll();
         ArrayList<GrupoDto> dtos = new ArrayList<>();
@@ -54,12 +68,21 @@ public class GrupoServicio {
         return dtos;
     }
 
-    // Obtener grupo por ID
+    /**
+     * Obtiene un grupo por su ID.
+     * @param id ID del grupo
+     * @return DTO de grupo, o null si no existe
+     */
     public GrupoDto obtenerGrupoPorId(Long id) {
         Optional<GrupoEntidad> grupoOpt = grupoInterfaz.findById(id);
         return grupoOpt.map(this::mapearAGrupoDTO).orElse(null);
     }
-    
+
+    /**
+     * Obtiene todos los grupos pertenecientes a un curso específico.
+     * @param idCurso ID del curso
+     * @return Lista de DTOs de grupos asociados al curso
+     */
     public List<GrupoDto> obtenerGruposPorCurso(Long idCurso) {
         List<GrupoEntidad> grupos = grupoInterfaz.findByCurso_IdCurso(idCurso);
         List<GrupoDto> dtos = new ArrayList<>();
@@ -73,13 +96,21 @@ public class GrupoServicio {
         return dtos;
     }
 
-    // Guardar grupo
+    /**
+     * Guarda un grupo en la base de datos.
+     * @param dto DTO del grupo a guardar
+     * @return Entidad de grupo guardada
+     */
     public GrupoEntidad guardarGrupo(GrupoDto dto) {
         GrupoEntidad grupo = mapearADtoAEntidad(dto);
         return grupoInterfaz.save(grupo);
     }
 
-    // Borrar grupo
+    /**
+     * Elimina un grupo por su ID.
+     * @param id ID del grupo a eliminar
+     * @return true si se eliminó, false si no existía
+     */
     public boolean borrarGrupo(Long id) {
         Optional<GrupoEntidad> grupoOpt = grupoInterfaz.findById(id);
         if (grupoOpt.isPresent()) {

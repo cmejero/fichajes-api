@@ -8,9 +8,17 @@ import altair.fichajes_api.entidad.CursoEntidad;
 import altair.fichajes_api.entidad.GrupoEntidad;
 import altair.fichajes_api.entidad.MatriculacionEntidad;
 
-public interface MatriculacionInterfaz extends JpaRepository<MatriculacionEntidad, Long>{
+/**
+ * Repositorio encargado de gestionar operaciones CRUD sobre la entidad {@link MatriculacionEntidad}.
+ * Extiende {@link JpaRepository} para proporcionar acceso a la base de datos.
+ */
+public interface MatriculacionInterfaz extends JpaRepository<MatriculacionEntidad, Long> {
 
-	
-	List<MatriculacionEntidad> findByCursoAndGrupo(CursoEntidad curso, GrupoEntidad grupo);
-
+    /**
+     * Obtiene todas las matriculaciones asociadas a un curso y grupo específicos.
+     * @param curso Entidad del curso
+     * @param grupo Entidad del grupo
+     * @return Lista de entidades de matriculación correspondientes al curso y grupo
+     */
+    List<MatriculacionEntidad> findByCursoAndGrupo(CursoEntidad curso, GrupoEntidad grupo);
 }

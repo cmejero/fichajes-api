@@ -1,5 +1,8 @@
 package altair.fichajes_api.dtos;
 
+/**
+ * Clase que se encarga de los campos de alumno y matriculacion
+ */
 public class AlumnoConMatriculacionDto {
 
     private Long idAlumno;

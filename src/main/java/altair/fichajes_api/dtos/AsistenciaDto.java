@@ -3,6 +3,9 @@ package altair.fichajes_api.dtos;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * Clase que se encarga de los campos de asistencia
+ */
 public class AsistenciaDto {
 	private Long idAsistencia;
 	private Long matriculacionId;

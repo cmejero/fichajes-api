@@ -1,86 +1,164 @@
 package altair.fichajes_api.servicios;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
+import java.time.format.DateTimeParseException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
+import altair.fichajes_api.dtos.FestivoDto;
 import altair.fichajes_api.entidad.FestivoEntidad;
 import altair.fichajes_api.repositorios.FestivoInterfaz;
-import jakarta.transaction.Transactional;
+import jakarta.annotation.PostConstruct;
 
+/**
+ * Servicio encargado de la gestión de festivos. Proporciona métodos para
+ * importar festivos desde archivo, obtenerlos, guardarlos, eliminarlos y
+ * mantenerlos actualizados.
+ */
 @Service
-@Transactional
 public class FestivoServicio {
 
-    @Autowired
-    private FestivoInterfaz festivoInterfaz;
+	private static final String RUTA_ARCHIVO = "src/main/resources/festivos.txt";
+	private static final String FORMATO_FECHA = "dd-MM-yyyy";
 
-    @Autowired
-    private RestTemplate restTemplate;
+	@Autowired
+	private FestivoInterfaz festivoInterfaz;
 
-    // URL limpia sin saltos de línea
-    private final String URL_FESTIVOS_CSV = "https://www.juntadeandalucia.es/datosabiertos/portal/dataset/2e273ede-2187-4a7e-abef-e6aa8375c64f/resource/c9e2c68e-1c4d-4948-8458-143f617352cd/download/calendario_2025.csv";
+	/**
+	 * Método ejecutado al iniciar la aplicación para importar los festivos.
+	 */
+	@PostConstruct
+	public void importarFestivosAlIniciar() {
+		importarFestivosDesdeArchivo();
+	}
 
-    private final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("yyyyMMdd");
+	/**
+	 * Importa festivos desde un archivo de texto, limpiando previamente la tabla.
+	 */
+	public void importarFestivosDesdeArchivo() {
+		try (BufferedReader br = new BufferedReader(new FileReader(RUTA_ARCHIVO))) {
+			// 1️⃣ Leer todas las fechas del archivo
+			Set<LocalDate> fechasArchivo = new HashSet<>();
+			String line;
+			while ((line = br.readLine()) != null) {
+				String[] campos = line.split(";");
+				for (String fechaStr : campos) {
+					try {
+						LocalDate fecha = LocalDate.parse(fechaStr.trim(), DateTimeFormatter.ofPattern(FORMATO_FECHA));
+						fechasArchivo.add(fecha);
+					} catch (DateTimeParseException e) {
+						System.out.println("Error al parsear la fecha: " + fechaStr);
+					}
+				}
+			}
 
-    public void importarFestivos() {
-        System.out.println("Iniciando importación de festivos...");
+			// 2️⃣ Obtener todas las fechas existentes en la BD
+			List<FestivoEntidad> festivosBD = festivoInterfaz.findAll();
+			Set<LocalDate> fechasBD = festivosBD.stream().map(FestivoEntidad::getFecha).collect(Collectors.toSet());
 
-        try {
-            // Descarga el CSV
-            String csv = restTemplate.getForObject(URL_FESTIVOS_CSV, String.class);
+			// 3️⃣ Eliminar de la BD las fechas que ya no están en el archivo
+			for (FestivoEntidad festivo : festivosBD) {
+				if (!fechasArchivo.contains(festivo.getFecha())) {
+					festivoInterfaz.delete(festivo);
+				}
+			}
 
-            if (csv == null || csv.isBlank()) {
-                System.out.println("No se ha recibido contenido CSV.");
-                return;
-            }
+			// 4️⃣ Insertar en la BD las fechas nuevas que están en el archivo
+			for (LocalDate fecha : fechasArchivo) {
+				if (!fechasBD.contains(fecha)) {
+					FestivoEntidad festivo = new FestivoEntidad();
+					festivo.setFecha(fecha);
+					festivoInterfaz.save(festivo);
+				}
+			}
 
-            // Separar por líneas
-            String[] lines = csv.split("\\r?\\n");
+			System.out.println("Festivos sincronizados correctamente. Total en BD: " + festivoInterfaz.count());
 
-            // Iterar cada línea
-            Arrays.stream(lines).forEach(line -> {
-                String[] campos = line.split(";");
-                if (campos.length >= 5) {
-                    String fechaStr = campos[1]; // día en formato YYYYMMDD
-                    String descripcion = campos[2];
-                    String municipio = campos[3].trim(); // eliminar espacios
+		} catch (IOException e) {
+			System.out.println("Error al leer el archivo de festivos: " + e.getMessage());
+		}
 
-                    // Solo Sevilla
-                    if ("Sevilla".equalsIgnoreCase(municipio)) {
-                        try {
-                            LocalDate fecha = LocalDate.parse(fechaStr, FORMATO_FECHA);
+	}
 
-                            // Evitar duplicados
-                            if (!festivoInterfaz.existsByFecha(fecha)) {
-                                FestivoEntidad festivo = new FestivoEntidad();
-                                festivo.setFecha(fecha);
-                                festivo.setNombre(descripcion);
-                                festivoInterfaz.save(festivo);
-                                System.out.println("Guardado festivo: " + fecha + " - " + descripcion);
-                            }
-                        } catch (Exception e) {
-                            System.out.println("Error parseando fecha: " + fechaStr);
-                        }
-                    }
-                }
-            });
+	/**
+	 * Obtiene todos los festivos existentes.
+	 * 
+	 * @return Lista de DTOs de festivos
+	 */
+	public List<FestivoDto> obtenerTodosFestivos() {
+		return festivoInterfaz.findAll().stream().map(this::convertirA_dto).collect(Collectors.toList());
+	}
 
-            System.out.println("Importación completada.");
+	/**
+	 * Guarda un festivo en la base de datos.
+	 * 
+	 * @param dto DTO del festivo a guardar
+	 * @return DTO del festivo guardado
+	 */
+	public FestivoDto guardarFestivo(FestivoDto dto) {
+		FestivoEntidad entidad = new FestivoEntidad();
+		entidad.setFecha(dto.getFecha());
+		entidad = festivoInterfaz.save(entidad);
+		return convertirA_dto(entidad);
+	}
 
-        } catch (Exception e) {
-            System.out.println("Error descargando CSV: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+	/**
+	 * Elimina un festivo por su ID.
+	 * 
+	 * @param id ID del festivo a eliminar
+	 * @return true si se eliminó, false si no existía
+	 */
+	public boolean eliminarFestivo(Long id) {
+		Optional<FestivoEntidad> festivo = festivoInterfaz.findById(id);
+		if (festivo.isPresent()) {
+			festivoInterfaz.delete(festivo.get());
+			return true;
+		}
+		return false;
+	}
 
-    @Scheduled(cron = "0 0 0 * * *") // Ejecuta a medianoche todos los días
-    public void actualizarFestivosDiarios() {
-        importarFestivos();
-    }
+	/**
+	 * Convierte una entidad de festivo a su DTO correspondiente.
+	 * 
+	 * @param entidad Entidad de festivo
+	 * @return DTO de festivo
+	 */
+	private FestivoDto convertirA_dto(FestivoEntidad entidad) {
+		FestivoDto dto = new FestivoDto();
+		dto.setId(entidad.getId());
+		dto.setFecha(entidad.getFecha());
+		return dto;
+	}
+
+	/**
+	 * Método para actualizar los festivos diarios, re-importando desde archivo.
+	 */
+	public void actualizarFestivosDiarios() {
+		importarFestivosDesdeArchivo();
+	}
+
+	/**
+	 * Guarda una lista de festivos en la base de datos, evitando duplicados.
+	 * 
+	 * @param festivos Lista de entidades de festivo
+	 */
+	public void guardarFestivos(List<FestivoEntidad> festivos) {
+		for (FestivoEntidad festivo : festivos) {
+			LocalDate fecha = festivo.getFecha();
+			if (!festivoInterfaz.existsByFecha(fecha)) {
+				festivoInterfaz.save(festivo);
+			} else {
+			}
+		}
+	}
 }

@@ -1,5 +1,8 @@
 package altair.fichajes_api.dtos;
 
+/**
+ * Clase que se encarga de los campos de grupo
+ */
 public class GrupoDto {
 	
 	private Long idGrupo;

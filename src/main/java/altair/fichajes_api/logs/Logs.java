@@ -12,10 +12,8 @@ import altair.fichajes_api.utilidades.Utilidades;
 */
 public class Logs {
 
-   // Formato para la fecha y hora del log
    private static final DateTimeFormatter FORMATEADOR_FECHA = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-   // Ruta base donde se almacenarán los logs
    private static final String RUTA_BASE_LOGS = "C:\\Users\\Carlo\\OneDrive\\Escritorio\\FICHEROS\\apiFichajesAltairLog\\";
 
    /**

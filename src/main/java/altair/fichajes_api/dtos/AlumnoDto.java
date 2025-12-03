@@ -2,6 +2,9 @@ package altair.fichajes_api.dtos;
 
 import java.util.List;
 
+/**
+ * Clase que se encarga de los campos de alumno
+ */
 public class AlumnoDto {
 	private Long idAlumno;
     private String nombreAlumno;
