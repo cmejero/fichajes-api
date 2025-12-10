@@ -47,11 +47,11 @@ public class AsistenciaServicio {
 	@Autowired
 	private AsistenciaInterfaz asistenciaInterfaz;
 	@Autowired
-	private GrupoInterfaz grupoInterfaz;
-	@Autowired
-	private CursoInterfaz cursoInterfaz;
-	@Autowired
 	private MatriculacionInterfaz matriculacionInterfaz;
+	@Autowired
+	CursoInterfaz cursoInterfaz;
+	@Autowired
+	GrupoInterfaz grupoInterfaz;
 	@Autowired
 	private FestivoInterfaz festivoInterfaz;
 
@@ -115,131 +115,104 @@ public class AsistenciaServicio {
 	}
 
 	/**
-	 * 
-	 * Obtiene la asistencia de todos los alumnos de un curso y grupo en una fecha
-	 * determinada,
-	 * 
-	 * creando registros automáticos si no existen, incluyendo faltas y festivos.
-	 * 
+	 * Obtiene la asistencia de un curso y grupo en una fecha concreta.
+	 * Si la asistencia no existe y la fecha es HOY, crea una falta automática.
+	 * Si la fecha es pasada, NO crea faltas nuevas.
+	 *
 	 * @param curso Nombre del curso
-	 * 
 	 * @param grupo Nombre del grupo
-	 * 
-	 * @param fecha Fecha de la asistencia
-	 * 
-	 * @return Lista de DTOs de asistencia
+	 * @param fecha Fecha a consultar
+	 * @return DTO de la asistencia o null si no existe registro en fechas pasadas
 	 */
 	public List<AsistenciaDto> obtenerAsistenciaPorCursoYGrupoEnFecha(String curso, String grupo, LocalDate fecha) {
 
-		// ⛔ EVITAR CREAR REGISTROS EN FIN DE SEMANA
-		if (fecha.getDayOfWeek() == DayOfWeek.SATURDAY || fecha.getDayOfWeek() == DayOfWeek.SUNDAY) {
-			return List.of(); // No crear faltas ni festivos
-		}
+	    CursoEntidad cursoEntidad = cursoInterfaz.findByNombreCurso(curso);
+	    GrupoEntidad grupoEntidad = grupoInterfaz.findByNombreGrupo(grupo);
 
-		CursoEntidad cursoEntidad = cursoInterfaz.findByNombreCurso(curso);
-		GrupoEntidad grupoEntidad = grupoInterfaz.findByNombreGrupo(grupo);
+	    List<MatriculacionEntidad> matriculas = 
+	            matriculacionInterfaz.findByCursoAndGrupo(cursoEntidad, grupoEntidad);
 
-		List<MatriculacionEntidad> matriculas = matriculacionInterfaz.findByCursoAndGrupo(cursoEntidad, grupoEntidad);
+	    List<AsistenciaDto> resultado = new ArrayList<>();
 
-		return matriculas.stream().filter(m -> {
-			if (m.getAnioEscolar() == null || !m.getAnioEscolar().contains("-"))
-				return false;
-			String[] partes = m.getAnioEscolar().split("-");
-			int anioInicio = Integer.parseInt(partes[0]);
-			int anioFin = Integer.parseInt(partes[1]);
+	    for (MatriculacionEntidad m : matriculas) {
 
-			LocalDate inicio = LocalDate.of(anioInicio, 9, 1);
-			LocalDate fin = LocalDate.of(anioFin, 6, 30);
+	        Optional<AsistenciaEntidad> asistenciaOpt =
+	                asistenciaInterfaz.findByMatriculacion_IdMatriculacionAndFecha(
+	                        m.getIdMatriculacion(), fecha
+	                );
 
-			return !fecha.isBefore(inicio) && !fecha.isAfter(fin);
-		}).map(m -> {
-			Optional<AsistenciaEntidad> asistenciaOpt = asistenciaInterfaz
-					.findByMatriculacion_IdMatriculacionAndFecha(m.getIdMatriculacion(), fecha);
+	        if (asistenciaOpt.isPresent()) {
+	            resultado.add(mapearADto(asistenciaOpt.get()));
+	            continue;
+	        }
 
-			if (asistenciaOpt.isPresent()) {
-				return mapearADto(asistenciaOpt.get());
-			}
+	        if (!fecha.equals(LocalDate.now())) {
+	            continue;
+	        }
 
-			// ⛔ DÍA FESTIVO = registrar FESTIVO
-			if (esDiaFestivo(fecha)) {
-				AsistenciaEntidad nuevaAsistencia = new AsistenciaEntidad();
-				nuevaAsistencia.setMatriculacion(m);
-				nuevaAsistencia.setFecha(fecha);
-				nuevaAsistencia.setEstado("FESTIVO");
-				nuevaAsistencia.setFechaModificacion(LocalDateTime.now());
+	        AsistenciaEntidad nueva = new AsistenciaEntidad();
+	        nueva.setMatriculacion(m);
+	        nueva.setFecha(fecha);
+	        nueva.setEstado("FALTA");
+	        nueva.setFechaModificacion(LocalDateTime.now());
 
-				return mapearADto(asistenciaInterfaz.save(nuevaAsistencia));
-			}
+	        resultado.add(mapearADto(asistenciaInterfaz.save(nueva)));
+	    }
 
-			// ⛔ SOLO DÍAS LUNES–VIERNES crean FALTA
-			AsistenciaEntidad nuevaAsistencia = new AsistenciaEntidad();
-			nuevaAsistencia.setMatriculacion(m);
-			nuevaAsistencia.setFecha(fecha);
-			nuevaAsistencia.setEstado("FALTA");
-			nuevaAsistencia.setFechaModificacion(LocalDateTime.now());
-
-			return mapearADto(asistenciaInterfaz.save(nuevaAsistencia));
-		}).collect(Collectors.toList());
+	    return resultado;
 	}
+
 
 	/**
-	 * 
-	 * Similar a obtenerAsistenciaPorCursoYGrupoEnFecha pero con validación de
-	 * existencia de curso/grupo.
-	 * 
-	 * @param curso Nombre del curso
-	 * 
-	 * @param grupo Nombre del grupo
-	 * 
-	 * @param fecha Fecha de asistencia
-	 * 
-	 * @return Lista de DTOs de asistencia
+	 * Devuelve una lista de asistencias para un curso+grupo+fecha.
+	 * Si un alumno no tiene registro:
+	 *   - SOLO si la fecha es HOY se crea una falta automática.
+	 *   - Si la fecha es pasada, simplemente no aparece.
 	 */
-	public List<AsistenciaDto> obtenerAsistenciasPorCursoGrupoYFecha(String curso, String grupo, LocalDate fecha) {
+	public List<AsistenciaDto> obtenerAsistenciasPorCursoGrupoYFecha(
+	        String curso, String grupo, LocalDate fecha) {
 
-		// ⛔ NO CREAR REGISTROS EN FIN DE SEMANA
-		if (fecha.getDayOfWeek() == DayOfWeek.SATURDAY || fecha.getDayOfWeek() == DayOfWeek.SUNDAY) {
-			return List.of();
-		}
+	    CursoEntidad cursoEntidad = cursoInterfaz.findByNombreCurso(curso);
+	    GrupoEntidad grupoEntidad = grupoInterfaz.findByNombreGrupo(grupo);
 
-		CursoEntidad cursoEntidad = cursoInterfaz.findByNombreCurso(curso);
-		GrupoEntidad grupoEntidad = grupoInterfaz.findByNombreGrupo(grupo);
+	    if (cursoEntidad == null || grupoEntidad == null) {
+	        return List.of();
+	    }
 
-		if (cursoEntidad == null || grupoEntidad == null) {
-			throw new RuntimeException("Curso o grupo no encontrados");
-		}
+	    List<MatriculacionEntidad> matriculas =
+	            matriculacionInterfaz.findByCursoAndGrupo(cursoEntidad, grupoEntidad);
 
-		List<MatriculacionEntidad> matriculas = matriculacionInterfaz.findByCursoAndGrupo(cursoEntidad, grupoEntidad);
+	    List<AsistenciaDto> resultado = new ArrayList<>();
 
-		return matriculas.stream().map(m -> {
-			Optional<AsistenciaEntidad> asistenciaOpt = asistenciaInterfaz
-					.findByMatriculacion_IdMatriculacionAndFecha(m.getIdMatriculacion(), fecha);
+	    for (MatriculacionEntidad m : matriculas) {
 
-			if (asistenciaOpt.isPresent()) {
-				return mapearADto(asistenciaOpt.get());
-			}
+	        Optional<AsistenciaEntidad> asistenciaOpt =
+	                asistenciaInterfaz.findByMatriculacion_IdMatriculacionAndFecha(
+	                        m.getIdMatriculacion(), fecha);
 
-			// ⛔ DÍA FESTIVO → FESTIVO
-			if (esDiaFestivo(fecha)) {
-				AsistenciaEntidad nuevaAsistencia = new AsistenciaEntidad();
-				nuevaAsistencia.setMatriculacion(m);
-				nuevaAsistencia.setFecha(fecha);
-				nuevaAsistencia.setEstado("FESTIVO");
-				nuevaAsistencia.setFechaModificacion(LocalDateTime.now());
 
-				return mapearADto(asistenciaInterfaz.save(nuevaAsistencia));
-			}
+	        if (asistenciaOpt.isPresent()) {
+	            resultado.add(mapearADto(asistenciaOpt.get()));
+	            continue;
+	        }
 
-			// ⛔ LUNES–VIERNES crean FALTA
-			AsistenciaEntidad nuevaAsistencia = new AsistenciaEntidad();
-			nuevaAsistencia.setMatriculacion(m);
-			nuevaAsistencia.setFecha(fecha);
-			nuevaAsistencia.setEstado("FALTA");
-			nuevaAsistencia.setFechaModificacion(LocalDateTime.now());
+	        if (!fecha.equals(LocalDate.now())) {
+	            continue;
+	        }
 
-			return mapearADto(asistenciaInterfaz.save(nuevaAsistencia));
-		}).collect(Collectors.toList());
+	        AsistenciaEntidad nueva = new AsistenciaEntidad();
+	        nueva.setMatriculacion(m);
+	        nueva.setFecha(fecha);
+	        nueva.setEstado("FALTA");
+	        nueva.setFechaModificacion(LocalDateTime.now());
+
+	        resultado.add(mapearADto(asistenciaInterfaz.save(nueva)));
+	    }
+
+	    return resultado;
 	}
+
+
 
 	/**
 	 * 
@@ -553,6 +526,13 @@ public class AsistenciaServicio {
 
 	        asistenciaInterfaz.save(nueva);
 	    }
+	}
+
+	/**
+	 * Verifica si una fecha coincide con el día actual.
+	 */
+	private boolean esHoy(LocalDate fecha) {
+	    return fecha.equals(LocalDate.now());
 	}
 
 }

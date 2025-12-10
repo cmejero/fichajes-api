@@ -109,13 +109,14 @@ public class AlumnoServicio {
      * @return Lista de DTOs de alumnos
      */
     public ArrayList<AlumnoDto> obtenerTodosAlumnos() {
-        List<AlumnoEntidad> alumnos = alumnoInterfaz.findAll();
+        List<AlumnoEntidad> alumnos = alumnoInterfaz.findAllConMatriculaciones();
         ArrayList<AlumnoDto> dtos = new ArrayList<>();
         for (AlumnoEntidad a : alumnos) {
             dtos.add(mapearAAlumnoDTO(a));
         }
         return dtos;
     }
+
 
     /**
      * Obtiene un alumno por su ID.
@@ -132,12 +133,14 @@ public class AlumnoServicio {
      * @return DTO combinado de alumno y matriculación, o null si no existe
      */
     public AlumnoConMatriculacionDto obtenerAlumnoConMatriculacion(Long idAlumno) {
-        Optional<AlumnoEntidad> alumnoOpt = alumnoInterfaz.findById(idAlumno);
+        Optional<AlumnoEntidad> alumnoOpt = alumnoInterfaz.findAlumnoConMatriculaciones(idAlumno);
         if (alumnoOpt.isEmpty()) {
             return null;
         }
 
         AlumnoEntidad alumno = alumnoOpt.get();
+
+        // Obtenemos la última matriculación si existe
         MatriculacionEntidad matriculacion = alumno.getMatriculaciones()
                 .stream()
                 .reduce((first, second) -> second)
@@ -158,6 +161,7 @@ public class AlumnoServicio {
 
         return dto;
     }
+
 
     /**
      * Modifica los datos de un alumno existente.

@@ -21,4 +21,13 @@ public interface MatriculacionInterfaz extends JpaRepository<MatriculacionEntida
      * @return Lista de entidades de matriculación correspondientes al curso y grupo
      */
     List<MatriculacionEntidad> findByCursoAndGrupo(CursoEntidad curso, GrupoEntidad grupo);
+    
+    /**
+     * Busca todas las matriculaciones de un alumno por su ID.
+     *
+     * @param idAlumno ID del alumno.
+     * @return Lista de entidades de matriculación.
+     */
+    List<MatriculacionEntidad> findByAlumno_IdAlumno(Long idAlumno);
+
 }

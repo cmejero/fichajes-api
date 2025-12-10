@@ -9,7 +9,9 @@ public class MatriculacionDto {
 	private Long idMatriculacion;
 	private Long alumnoId;
 	private Long cursoId;
+	private String nombreCurso;
 	private Long grupoId;
+	private String nombreGrupo;
 	private String anioEscolar;
 	private String uidLlave;
 	
@@ -49,6 +51,18 @@ public class MatriculacionDto {
 	}
 	public void setUidLlave(String uidLlave) {
 		this.uidLlave = uidLlave;
+	}
+	public String getNombreCurso() {
+		return nombreCurso;
+	}
+	public void setNombreCurso(String nombreCurso) {
+		this.nombreCurso = nombreCurso;
+	}
+	public String getNombreGrupo() {
+		return nombreGrupo;
+	}
+	public void setNombreGrupo(String nombreGrupo) {
+		this.nombreGrupo = nombreGrupo;
 	}
 	
 	

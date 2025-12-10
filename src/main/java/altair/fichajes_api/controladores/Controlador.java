@@ -65,7 +65,7 @@ public class Controlador {
 	 * @return ResponseEntity con AlumnoDto si se encuentra, 404 si no, 500 en caso de error.
 	 */
 	@GetMapping("/alumno/{idAlumno}")
-	public ResponseEntity<AlumnoDto> obtenerAlumno(@PathVariable Long id) {
+	public ResponseEntity<AlumnoDto> obtenerAlumno(@PathVariable("idAlumno") Long id) {
 	    Logs.ficheroLog("➡️ Solicitud para obtener alumno con ID: " + id);
 	    try {
 	        AlumnoDto alumno = alumnoServicio.obtenerAlumnoPorId(id);
@@ -438,6 +438,25 @@ public class Controlador {
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 	    }
 	}
+	
+	
+	/**
+	 * Lista todas las matriculaciones de un alumno específico.
+	 *
+	 * @param idAlumno ID del alumno.
+	 * @return Lista de DTOs de matriculaciones asociadas al alumno.
+	 */
+	@GetMapping("/matriculaciones/alumno/{idAlumno}")
+	public List<MatriculacionDto> listarMatriculacionesPorAlumno(@PathVariable("idAlumno") Long idAlumno) {
+	    Logs.ficheroLog("➡️ Solicitud para listar matriculaciones del alumno ID: " + idAlumno);
+	    try {
+	        return matriculacionServicio.obtenerPorAlumno(idAlumno);
+	    } catch (Exception e) {
+	        Logs.ficheroLog("❌ Error al listar matriculaciones por alumno: " + e.getMessage());
+	        return new ArrayList<>();
+	    }
+	}
+
 
 	/**
 	 * Elimina una matriculación por su ID.

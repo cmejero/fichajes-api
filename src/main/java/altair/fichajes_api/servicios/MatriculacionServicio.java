@@ -69,6 +69,31 @@ public class MatriculacionServicio {
             return dto;
         }).toList();
     }
+    
+    /**
+     * Obtiene todas las matriculaciones de un alumno específico.
+     *
+     * @param idAlumno ID del alumno.
+     * @return Lista de DTOs de matriculaciones asociadas al alumno.
+     */
+    public List<MatriculacionDto> obtenerPorAlumno(Long idAlumno) {
+        List<MatriculacionEntidad> matriculas = matriculacionInterfaz.findByAlumno_IdAlumno(idAlumno);
+
+        return matriculas.stream().map(m -> {
+            MatriculacionDto dto = new MatriculacionDto();
+            dto.setIdMatriculacion(m.getIdMatriculacion());
+            dto.setAlumnoId(m.getAlumno().getIdAlumno());
+            dto.setCursoId(m.getCurso().getIdCurso());
+            dto.setNombreCurso(m.getCurso().getNombreCurso());
+            dto.setGrupoId(m.getGrupo().getIdGrupo());
+            dto.setNombreGrupo(m.getGrupo().getNombreGrupo());
+            dto.setAnioEscolar(m.getAnioEscolar());
+            dto.setUidLlave(m.getUidLlave());
+            return dto;
+        }).toList();
+    }
+
+
 
     /**
      * Obtiene una matriculación por su ID.
