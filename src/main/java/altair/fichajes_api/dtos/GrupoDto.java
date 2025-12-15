@@ -8,6 +8,7 @@ public class GrupoDto {
 	private Long idGrupo;
 	private String nombreGrupo;
 	private Long cursoId;
+	private String nombreCurso;
 	
 	
 	public Long getIdGrupo() {
@@ -28,6 +29,13 @@ public class GrupoDto {
 	public void setCursoId(Long cursoId) {
 		this.cursoId = cursoId;
 	}
+	public String getNombreCurso() {
+		return nombreCurso;
+	}
+	public void setNombreCurso(String nombreCurso) {
+		this.nombreCurso = nombreCurso;
+	}
+	
 	
 	
 }

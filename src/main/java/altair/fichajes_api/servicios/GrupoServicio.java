@@ -36,6 +36,7 @@ public class GrupoServicio {
         dto.setIdGrupo(grupo.getIdGrupo());
         dto.setNombreGrupo(grupo.getNombreGrupo());
         dto.setCursoId(grupo.getCurso() != null ? grupo.getCurso().getIdCurso() : null);
+        dto.setNombreCurso(grupo.getCurso().getNombreCurso());
         return dto;
     }
 

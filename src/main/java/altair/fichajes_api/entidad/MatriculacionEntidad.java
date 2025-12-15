@@ -36,6 +36,7 @@ public class MatriculacionEntidad {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "curso_id", nullable = false)
     @JsonBackReference
+    
 
     private CursoEntidad curso;
 
