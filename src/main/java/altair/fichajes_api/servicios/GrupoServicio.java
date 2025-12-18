@@ -106,6 +106,37 @@ public class GrupoServicio {
         GrupoEntidad grupo = mapearADtoAEntidad(dto);
         return grupoInterfaz.save(grupo);
     }
+    
+    
+
+    /**
+     * Modifica los datos de un grupo existente.
+     *
+     * @param idGrupo ID del grupo a modificar
+     * @param dto     DTO con los nuevos datos del grupo
+     * @return true si se modificó correctamente, false si no existe
+     */
+    public boolean modificarGrupo(Long idGrupo, GrupoDto dto) {
+
+        Optional<GrupoEntidad> grupoOpt = grupoInterfaz.findById(idGrupo);
+
+        if (grupoOpt.isPresent()) {
+            GrupoEntidad grupo = grupoOpt.get();
+
+            grupo.setNombreGrupo(dto.getNombreGrupo());
+
+            if (dto.getCursoId() != null) {
+                cursoInterfaz.findById(dto.getCursoId())
+                    .ifPresent(grupo::setCurso);
+            }
+
+            grupoInterfaz.save(grupo);
+            return true;
+        }
+
+        return false;
+    }
+
 
     /**
      * Elimina un grupo por su ID.

@@ -78,6 +78,29 @@ public class CursoServicio {
         CursoEntidad curso = mapearADtoAEntidad(dto);
         return cursoInterfaz.save(curso);
     }
+    
+    /**
+     * Modifica los datos de un curso existente.
+     * @param id ID del curso
+     * @param dto DTO con los nuevos datos del curso
+     * @return true si se modificó correctamente, false si no existe
+     */
+    public boolean modificarCurso(Long id, CursoDto dto) {
+
+        Optional<CursoEntidad> cursoOpt = cursoInterfaz.findById(id);
+
+        if (cursoOpt.isPresent()) {
+            CursoEntidad curso = cursoOpt.get();
+
+            curso.setNombreCurso(dto.getNombreCurso());
+
+            cursoInterfaz.save(curso);
+            return true;
+        }
+
+        return false;
+    }
+
 
     /**
      * Elimina un curso existente por su ID.

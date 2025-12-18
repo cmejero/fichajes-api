@@ -528,11 +528,5 @@ public class AsistenciaServicio {
 	    }
 	}
 
-	/**
-	 * Verifica si una fecha coincide con el día actual.
-	 */
-	private boolean esHoy(LocalDate fecha) {
-	    return fecha.equals(LocalDate.now());
-	}
 
 }

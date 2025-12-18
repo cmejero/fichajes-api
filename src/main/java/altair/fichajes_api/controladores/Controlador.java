@@ -243,6 +243,44 @@ public class Controlador {
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al guardar curso");
 	    }
 	}
+	
+	
+	/**
+	 * Modifica los datos de un curso existente.
+	 * @param idCurso ID del curso a modificar
+	 * @param dto DTO con los nuevos datos del curso
+	 * @return ResponseEntity con el resultado de la operación
+	 */
+	@PutMapping("/modificarCurso/{idCurso}")
+	public ResponseEntity<String> modificarCurso(
+	        @PathVariable Long idCurso,
+	        @RequestBody CursoDto dto) {
+
+	    Logs.ficheroLog("➡️ Solicitud para modificar curso con ID: " + idCurso);
+
+	    try {
+	        boolean modificado = cursoServicio.modificarCurso(idCurso, dto);
+
+	        if (modificado) {
+	            Logs.ficheroLog("✅ Curso modificado correctamente con ID: " + idCurso);
+	            return ResponseEntity.ok("Curso modificado correctamente");
+	        } else {
+	            Logs.ficheroLog("⚠️ Curso no encontrado con ID: " + idCurso);
+	            return ResponseEntity
+	                    .status(HttpStatus.NOT_FOUND)
+	                    .body("Curso no encontrado");
+	        }
+
+	    } catch (Exception e) {
+	        Logs.ficheroLog("❌ Error al modificar curso con ID " + idCurso + ": " + e.getMessage());
+	        return ResponseEntity
+	                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+	                .body("Error al modificar curso");
+	    }
+	}
+
+	
+	
 
 	/**
 	 * Elimina un curso por su ID.
@@ -351,6 +389,42 @@ public class Controlador {
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al guardar grupo");
 	    }
 	}
+	
+	   /**
+     * Modifica un grupo existente.
+     *
+     * @param idGrupo ID del grupo a modificar
+     * @param dto     DTO con los nuevos datos del grupo
+     * @return ResponseEntity con el resultado de la operación
+     */
+    @PutMapping("/modificarGrupo/{idGrupo}")
+    public ResponseEntity<String> modificarGrupo(
+            @PathVariable Long idGrupo,
+            @RequestBody GrupoDto dto) {
+
+        Logs.ficheroLog("➡️ Solicitud para modificar grupo con ID: " + idGrupo);
+
+        try {
+            boolean modificado = grupoServicio.modificarGrupo(idGrupo, dto);
+
+            if (modificado) {
+                Logs.ficheroLog("✅ Grupo modificado correctamente con ID: " + idGrupo);
+                return ResponseEntity.ok("Grupo modificado correctamente");
+            } else {
+                Logs.ficheroLog("⚠️ Grupo no encontrado con ID: " + idGrupo);
+                return ResponseEntity
+                        .status(HttpStatus.NOT_FOUND)
+                        .body("Grupo no encontrado");
+            }
+
+        } catch (Exception e) {
+            Logs.ficheroLog("❌ Error al modificar grupo con ID " + idGrupo + ": " + e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al modificar grupo");
+        }
+    }
+
 
 	/**
 	 * Elimina un grupo por su ID.
@@ -397,6 +471,33 @@ public class Controlador {
 	                .body("Error al crear la matriculación: " + e.getMessage());
 	    }
 	}
+	
+	/**
+	 * Modifica los datos de una matrícula existente.
+	 *
+	 * @param idMatriculacion ID de la matrícula a modificar.
+	 * @param dto             Objeto MatriculacionDto con los datos actualizados.
+	 * @return ResponseEntity con resultado de la operación.
+	 */
+	@PutMapping("/modificarMatriculacion/{idMatriculacion}")
+	public ResponseEntity<String> modificarMatriculacion(@PathVariable Long idMatriculacion,
+	                                                     @RequestBody MatriculacionDto dto) {
+	    Logs.ficheroLog("➡️ Solicitud para modificar matrícula con ID: " + idMatriculacion);
+	    try {
+	        boolean modificado = matriculacionServicio.modificarMatriculacion(idMatriculacion, dto);
+	        if (modificado) {
+	            Logs.ficheroLog("✅ Matrícula modificada correctamente con ID: " + idMatriculacion);
+	            return ResponseEntity.ok("Matrícula modificada correctamente");
+	        } else {
+	            Logs.ficheroLog("⚠️ Matrícula no encontrada con ID: " + idMatriculacion);
+	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Matrícula no encontrada");
+	        }
+	    } catch (Exception e) {
+	        Logs.ficheroLog("❌ Error al modificar matrícula con ID " + idMatriculacion + ": " + e.getMessage());
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al modificar matrícula");
+	    }
+	}
+
 
 	/**
 	 * Obtiene la lista de todas las matriculaciones.
