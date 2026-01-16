@@ -1,5 +1,5 @@
 package altair.fichajes_api.controladores;
-
+	
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,8 +27,12 @@ import altair.fichajes_api.dtos.GrupoDto;
 import altair.fichajes_api.dtos.MatriculacionDto;
 import altair.fichajes_api.entidad.AsistenciaEntidad;
 import altair.fichajes_api.entidad.MatriculacionEntidad;
+import altair.fichajes_api.lector.LectorEventoServicio;
+import altair.fichajes_api.lector.LectorNfcFuncionalidad;
+import altair.fichajes_api.lector.LectorTarjetaFuncionalidad;
 import altair.fichajes_api.logs.Logs;
 import altair.fichajes_api.repositorios.AsistenciaInterfaz;
+import altair.fichajes_api.repositorios.MatriculacionInterfaz;
 import altair.fichajes_api.servicios.AlumnoServicio;
 import altair.fichajes_api.servicios.AsistenciaServicio;
 import altair.fichajes_api.servicios.CursoServicio;
@@ -54,8 +58,36 @@ public class Controlador {
 	private AsistenciaServicio asistenciaServicio;
 	@Autowired
 	AsistenciaInterfaz asistenciaInterfaz;
+	@Autowired
+	MatriculacionInterfaz matriculacionInterfaz;
+	@Autowired
+	LectorTarjetaFuncionalidad lectorTarjetaFuncionalidad;
+	@Autowired
+	LectorNfcFuncionalidad lectorNfcFuncionalidad;
+	@Autowired
+	private LectorEventoServicio lectorEventoServicio;
 
+	
+	
+	
 
+	/* LECTOR */
+
+	/**
+	 * Procesa la UID leída por el lector NFC y devuelve informacion de matrícula.
+	 *
+	 * @param modo Si es "formulario", solo devuelve la informacion; si no, registra asistencia.
+	 * @return ResponseEntity con datos de la UID y, si aplica, info del alumno, curso y grupo.
+	 */
+	@GetMapping("/lector/evento")
+	public ResponseEntity<?> procesarEvento(
+	        @RequestParam(required = false) String modo) {
+
+	    return ResponseEntity.ok(
+	            lectorEventoServicio.procesarEvento(modo)
+	    );
+	}
+    
 	/* METODOS CRUD DE LA TABLA ALUMNO */
 
 	/**
@@ -584,44 +616,6 @@ public class Controlador {
 	}
 
 
-	/* METODOS CRUD DE LA TABLA ASISTENCIA */
-	/**
-	 * Ficha la entrada de un alumno para la matriculación indicada.
-	 *
-	 * @param matriculacionId ID de la matriculación.
-	 * @return ResponseEntity con la asistencia registrada o mensaje de error.
-	 */
-	@PostMapping("/asistencia/entrada/{matriculacionId}")
-	public ResponseEntity<?> ficharEntrada(@PathVariable Long matriculacionId) {
-	    Logs.ficheroLog("➡️ Solicitud para fichar entrada matriculación ID: " + matriculacionId);
-	    try {
-	        AsistenciaDto asistencia = asistenciaServicio.ficharEntrada(matriculacionId);
-	        Logs.ficheroLog("✅ Entrada fichada para matriculación ID: " + matriculacionId);
-	        return ResponseEntity.ok(asistencia);
-	    } catch (RuntimeException e) {
-	        Logs.ficheroLog("❌ Error al fichar entrada: " + e.getMessage());
-	        return ResponseEntity.badRequest().body(e.getMessage());
-	    }
-	}
-
-	/**
-	 * Ficha la salida de un alumno para la matriculación indicada.
-	 *
-	 * @param matriculacionId ID de la matriculación.
-	 * @return ResponseEntity con la asistencia actualizada o mensaje de error.
-	 */
-	@PutMapping("/asistencia/salida/{matriculacionId}")
-	public ResponseEntity<?> ficharSalida(@PathVariable Long matriculacionId) {
-	    Logs.ficheroLog("➡️ Solicitud para fichar salida matriculación ID: " + matriculacionId);
-	    try {
-	        AsistenciaDto asistencia = asistenciaServicio.ficharSalida(matriculacionId);
-	        Logs.ficheroLog("✅ Salida fichada para matriculación ID: " + matriculacionId);
-	        return ResponseEntity.ok(asistencia);
-	    } catch (RuntimeException e) {
-	        Logs.ficheroLog("❌ Error al fichar salida: " + e.getMessage());
-	        return ResponseEntity.badRequest().body(e.getMessage());
-	    }
-	}
 
 	/**
 	 * Modifica una asistencia existente.

@@ -1,4 +1,4 @@
-package altair.fichajes_api.Configuracion;
+package altair.fichajes_api.Configuraciones;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

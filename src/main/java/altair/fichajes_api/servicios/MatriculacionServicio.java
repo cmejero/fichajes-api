@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import altair.fichajes_api.dtos.AlumnoConMatriculacionDto;
 import altair.fichajes_api.dtos.MatriculacionDto;
 import altair.fichajes_api.entidad.CursoEntidad;
 import altair.fichajes_api.entidad.GrupoEntidad;
@@ -34,6 +35,22 @@ public class MatriculacionServicio {
 
 	@Autowired
 	private GrupoInterfaz grupoInterfaz;
+	
+	
+	  public static AlumnoConMatriculacionDto mapearADto(MatriculacionEntidad matricula) {
+	        AlumnoConMatriculacionDto dto = new AlumnoConMatriculacionDto();
+
+	        dto.setIdAlumno(matricula.getAlumno().getIdAlumno());
+	        dto.setIdMatriculacion(matricula.getIdMatriculacion());
+	        dto.setNombreAlumno(matricula.getAlumno().getNombreAlumno());
+	        dto.setApellidoAlumno(matricula.getAlumno().getApellidoAlumno());
+	        dto.setCursoId(matricula.getCurso().getIdCurso());
+	        dto.setGrupoId(matricula.getGrupo().getIdGrupo());
+	        dto.setAnioEscolar(matricula.getAnioEscolar());
+	        dto.setUidLlave(matricula.getUidLlave());
+
+	        return dto;
+	    }
 
 	/**
 	 * Crea una nueva matriculación a partir de un DTO.
@@ -127,6 +144,7 @@ public class MatriculacionServicio {
 			return dto;
 		}).toList();
 	}
+
 
 	/**
 	 * Obtiene una matriculación por su ID.

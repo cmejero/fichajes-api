@@ -1,5 +1,7 @@
 package altair.fichajes_api.dtos;
 
+import altair.fichajes_api.entidad.MatriculacionEntidad;
+
 /**
  * Clase que se encarga de los campos de alumno y matriculacion
  */
@@ -14,6 +16,19 @@ public class AlumnoConMatriculacionDto {
     private String anioEscolar;
     private String uidLlave;
     
+    
+    public static AlumnoConMatriculacionDto mapearADto(MatriculacionEntidad matricula) {
+        AlumnoConMatriculacionDto dto = new AlumnoConMatriculacionDto();
+        dto.setIdAlumno(matricula.getAlumno().getIdAlumno());
+        dto.setIdMatriculacion(matricula.getIdMatriculacion());
+        dto.setNombreAlumno(matricula.getAlumno().getNombreAlumno());
+        dto.setApellidoAlumno(matricula.getAlumno().getApellidoAlumno());
+        dto.setCursoId(matricula.getCurso().getIdCurso());
+        dto.setGrupoId(matricula.getGrupo().getIdGrupo());
+        dto.setAnioEscolar(matricula.getAnioEscolar());
+        dto.setUidLlave(matricula.getUidLlave());
+        return dto;
+    }
     
 	public Long getIdAlumno() {
 		return idAlumno;
