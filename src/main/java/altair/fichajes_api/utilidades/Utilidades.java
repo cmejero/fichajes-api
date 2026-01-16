@@ -36,20 +36,27 @@ public class Utilidades {
 			return "errorFecha";
 		}
 	}
-	
-	   public static String obtenerAnioEscolarActual() {
-	        LocalDate hoy = LocalDate.now();
-	        int inicio;
-	        int fin;
 
-	        if (hoy.getMonthValue() >= 9) {
-	            inicio = hoy.getYear();
-	            fin = hoy.getYear() + 1;
-	        } else {
-	            inicio = hoy.getYear() - 1;
-	            fin = hoy.getYear();
-	        }
+	/**
+	 * Obtiene el año escolar actual en formato "AAAA-AAAA". Considera que el año
+	 * escolar inicia en septiembre y termina en junio.
+	 *
+	 * @return String con el año escolar actual.
+	 */
 
-	        return inicio + "-" + fin;
-	    }
+	public static String obtenerAnioEscolarActual() {
+		LocalDate hoy = LocalDate.now();
+		int inicio;
+		int fin;
+
+		if (hoy.getMonthValue() >= 9) {
+			inicio = hoy.getYear();
+			fin = hoy.getYear() + 1;
+		} else {
+			inicio = hoy.getYear() - 1;
+			fin = hoy.getYear();
+		}
+
+		return inicio + "-" + fin;
+	}
 }

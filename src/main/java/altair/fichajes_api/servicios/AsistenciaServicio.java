@@ -63,16 +63,7 @@ public class AsistenciaServicio {
 	private Set<LocalDate> vacaciones = new HashSet<>();
 	private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
-	@Transactional
-	public void ficharPorUidTarjeta(String uidTarjeta) {
-		  String anioEscolarActual = Utilidades.obtenerAnioEscolarActual();
-
-		// Obtener matrícula solo del año escolar actual
-		MatriculacionEntidad matricula = tarjetaMatriculaFuncionalidad.obtenerMatriculaPorUidYAnio(uidTarjeta,
-				anioEscolarActual);
-
-		ficharPorMatriculacion(matricula.getIdMatriculacion());
-	}
+	
 
 	/**
 	 * Obtiene la asistencia de un curso y grupo en una fecha concreta. Si la
@@ -496,6 +487,33 @@ public class AsistenciaServicio {
 			asistenciaInterfaz.save(nueva);
 		}
 	}
+	
+	
+
+	/**
+	 * Realiza el fichaje de asistencia utilizando la UID de una tarjeta NFC.
+	 * Solo se considera la matrícula correspondiente al año escolar actual.
+	 *
+	 * @param uidTarjeta UID de la tarjeta NFC a fichar.
+	 */
+	@Transactional
+	public void ficharPorUidTarjeta(String uidTarjeta) {
+		  String anioEscolarActual = Utilidades.obtenerAnioEscolarActual();
+
+		// Obtener matrícula solo del año escolar actual
+		MatriculacionEntidad matricula = tarjetaMatriculaFuncionalidad.obtenerMatriculaPorUidYAnio(uidTarjeta,
+				anioEscolarActual);
+
+		ficharPorMatriculacion(matricula.getIdMatriculacion());
+	}
+	
+	
+	/**
+	 * Registra el fichaje de asistencia para una matrícula en el día actual.
+	 * Marca hora de entrada si aún no existe, o hora de salida si la entrada ya está registrada.
+	 *
+	 * @param idMatriculacion ID de la matrícula a fichar.
+	 */
 
 	@Transactional
 	public void ficharPorMatriculacion(Long idMatriculacion) {

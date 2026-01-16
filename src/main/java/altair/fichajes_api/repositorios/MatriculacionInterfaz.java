@@ -27,7 +27,7 @@ public interface MatriculacionInterfaz extends JpaRepository<MatriculacionEntida
 	 */
 	List<MatriculacionEntidad> findByCursoAndGrupo(CursoEntidad curso, GrupoEntidad grupo);
 
-	Optional<MatriculacionEntidad> findByUidLlave(String uidTarjeta);
+	
 
 	/**
 	 * Busca todas las matriculaciones de un alumno por su ID.
@@ -36,13 +36,46 @@ public interface MatriculacionInterfaz extends JpaRepository<MatriculacionEntida
 	 * @return Lista de entidades de matriculación.
 	 */
 	List<MatriculacionEntidad> findByAlumno_IdAlumno(Long idAlumno);
+	
 
+	/**
+	 * Busca una matrícula por la UID de la tarjeta.
+	 *
+	 * @param uidTarjeta UID de la tarjeta NFC.
+	 * @return Optional con la matrícula si existe.
+	 */
+	Optional<MatriculacionEntidad> findByUidLlave(String uidTarjeta);
+
+
+/**
+ * Busca una matrícula por la UID de la tarjeta y año escolar.
+ *
+ * @param uidLlave UID de la tarjeta NFC.
+ * @param anioEscolar Año escolar en formato "AAAA-AAAA".
+ * @return Optional con la matrícula si existe.
+ */
 	Optional<MatriculacionEntidad> findByUidLlaveAndAnioEscolar(String uidLlave, String anioEscolar);
 
+	
+	/**
+	 * Obtiene todas las matrículas de un curso y grupo en un año escolar específico.
+	 *
+	 * @param curso Curso al que pertenece la matrícula.
+	 * @param grupo Grupo al que pertenece la matrícula.
+	 * @param anioEscolar Año escolar en formato "AAAA-AAAA".
+	 * @return Lista de matrículas que cumplen los criterios.
+	 */
 	List<MatriculacionEntidad> findByCursoAndGrupoAndAnioEscolar(CursoEntidad curso, GrupoEntidad grupo,
 			String anioEscolar);
 	
-	
+	/**
+	 * Busca una matrícula junto con su alumno, curso y grupo asociados
+	 * filtrando por UID de la tarjeta y año escolar.
+	 *
+	 * @param uid UID de la tarjeta NFC.
+	 * @param anio Año escolar en formato "AAAA-AAAA".
+	 * @return Optional con la matrícula completa si existe.
+	 */
 	@Query("SELECT m FROM MatriculacionEntidad m " +
 		       "JOIN FETCH m.alumno " +
 		       "JOIN FETCH m.curso " +

@@ -17,6 +17,12 @@ import org.springframework.stereotype.Service;
 import altair.fichajes_api.servicios.AsistenciaServicio;
 import jakarta.annotation.PostConstruct;
 
+
+/**
+ * Servicio que gestiona la interacción con el lector de tarjetas NFC.
+ * Permite la lectura de UID, la escucha activa y el fichaje automático
+ * de alumnos mediante sus tarjetas.
+ */
 @Service
 public class LectorTarjetaFuncionalidad {
 
@@ -30,25 +36,40 @@ public class LectorTarjetaFuncionalidad {
     private String ultimaUid = null;
     private long ultimaDeteccion = 0; // en ms
 
-    
+    /**
+     * Inicia la escucha automática del lector NFC y llama al callback
+     * cuando se detecta una tarjeta nueva.
+     *
+     * @param callback Callback a invocar al detectar una tarjeta.
+     */
     @PostConstruct
     public void iniciarEscucha() {
         iniciarEscucha(uid -> procesarUid(uid));
     }
     
-    
+    /**
+     * Procesa una UID detectada: registra la UID y realiza el fichaje.
+     *
+     * @param uid UID de la tarjeta detectada.
+     */
     @Async
     public void procesarUid(String uid) {
         lectorNfcFuncionalidad.nuevoUid(uid);
         try {
             asistenciaServicio.ficharPorUidTarjeta(uid);
         } catch (Exception e) {
-            System.err.println("No se pudo fichar: " + e.getMessage());
+           // System.err.println("No se pudo fichar: " + e.getMessage());
         }
     }
     
     
-    
+    /**
+     * Lee el UID de una tarjeta conectada a un terminal específico.
+     *
+     * @param terminal Terminal donde está insertada la tarjeta.
+     * @return UID de la tarjeta como cadena hexadecimal.
+     * @throws Exception si no se puede leer la tarjeta.
+     */
     public String leerUidTarjeta(CardTerminal terminal) throws Exception {
         Card card = null;
         try {
@@ -74,12 +95,19 @@ public class LectorTarjetaFuncionalidad {
                 try {
                     card.disconnect(false);
                 } catch (CardException ex) {
-                    System.err.println("Advertencia al desconectar: " + ex.getMessage());
+                   // System.err.println("Advertencia al desconectar: " + ex.getMessage());
                 }
             }
         }
     }
 
+    
+    /**
+     * Método de utilidad para leer el UID de la primera tarjeta disponible
+     * sin usar la escucha continua.
+     *
+     * @return UID de la tarjeta como cadena hexadecimal.
+     */
     public interface LectorCallback {
         void tarjetaDetectada(String uid);
     }
@@ -100,7 +128,7 @@ public class LectorTarjetaFuncionalidad {
                 }
 
                 CardTerminal terminal = terminals.get(0);
-                System.out.println("Lector NFC listo: " + terminal.getName());
+              //  System.out.println("Lector NFC listo: " + terminal.getName());
 
                 while (true) {
                     try {
@@ -109,7 +137,7 @@ public class LectorTarjetaFuncionalidad {
                             try {
                                 uid = leerUidTarjeta(terminal);
                             } catch (Exception e) {
-                                System.err.println("Error leyendo tarjeta: " + e.getMessage());
+                              //  System.err.println("Error leyendo tarjeta: " + e.getMessage());
                             }
 
                             long ahora = System.currentTimeMillis();
@@ -117,7 +145,7 @@ public class LectorTarjetaFuncionalidad {
                             if (uid != null && (!uid.equals(ultimaUid) || (ahora - ultimaDeteccion) > 2000)) {
                                 ultimaUid = uid;
                                 ultimaDeteccion = ahora;
-                                System.out.println("UID detectado: " + uid);
+                               // System.out.println("UID detectado: " + uid);
                                 callback.tarjetaDetectada(uid);
                             }
 
@@ -125,11 +153,11 @@ public class LectorTarjetaFuncionalidad {
                             try {
                                 terminal.waitForCardAbsent(0);
                             } catch (CardException e) {
-                                System.err.println("Error esperando a que tarjeta se retire: " + e.getMessage());
+                              //  System.err.println("Error esperando a que tarjeta se retire: " + e.getMessage());
                             }
                         }
                     } catch (CardException e) {
-                        System.err.println("Error terminal: " + e.getMessage());
+                      //  System.err.println("Error terminal: " + e.getMessage());
                         try {
                             Thread.sleep(1000); // espera antes de reintentar
                         } catch (InterruptedException ex) {
@@ -137,7 +165,7 @@ public class LectorTarjetaFuncionalidad {
                         }
                     }
 
-                    Thread.sleep(100); // delay para no saturar CPU
+                    Thread.sleep(100); 
                 }
             } catch (Exception e) {
                 e.printStackTrace();

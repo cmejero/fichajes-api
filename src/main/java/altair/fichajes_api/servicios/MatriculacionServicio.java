@@ -36,7 +36,12 @@ public class MatriculacionServicio {
 	@Autowired
 	private GrupoInterfaz grupoInterfaz;
 	
-	
+	/**
+	 * Convierte una entidad MatriculacionEntidad a su correspondiente DTO AlumnoConMatriculacionDto.
+	 *
+	 * @param matricula Entidad de matrícula a mapear.
+	 * @return DTO con los datos del alumno y su matrícula.
+	 */
 	  public static AlumnoConMatriculacionDto mapearADto(MatriculacionEntidad matricula) {
 	        AlumnoConMatriculacionDto dto = new AlumnoConMatriculacionDto();
 
