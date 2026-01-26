@@ -1,5 +1,5 @@
 package altair.fichajes_api.controladores;
-	
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,13 +23,12 @@ import altair.fichajes_api.dtos.AlumnoConMatriculacionDto;
 import altair.fichajes_api.dtos.AlumnoDto;
 import altair.fichajes_api.dtos.AsistenciaDto;
 import altair.fichajes_api.dtos.CursoDto;
+import altair.fichajes_api.dtos.EventoLectorDto;
 import altair.fichajes_api.dtos.GrupoDto;
 import altair.fichajes_api.dtos.MatriculacionDto;
 import altair.fichajes_api.entidad.AsistenciaEntidad;
 import altair.fichajes_api.entidad.MatriculacionEntidad;
 import altair.fichajes_api.lector.LectorEventoServicio;
-import altair.fichajes_api.lector.LectorNfcFuncionalidad;
-import altair.fichajes_api.lector.LectorTarjetaFuncionalidad;
 import altair.fichajes_api.logs.Logs;
 import altair.fichajes_api.repositorios.AsistenciaInterfaz;
 import altair.fichajes_api.repositorios.MatriculacionInterfaz;
@@ -61,46 +60,47 @@ public class Controlador {
 	@Autowired
 	MatriculacionInterfaz matriculacionInterfaz;
 	@Autowired
-	LectorTarjetaFuncionalidad lectorTarjetaFuncionalidad;
-	@Autowired
-	LectorNfcFuncionalidad lectorNfcFuncionalidad;
-	@Autowired
 	private LectorEventoServicio lectorEventoServicio;
 
-	
-	
-	
+
 
 	/* LECTOR */
 
 	/**
-	 * Procesa la UID leída por el lector NFC y devuelve informacion de matrícula.
+	 * Endpoint GET /lector/evento que procesa el evento del lector NFC.
 	 *
-	 * @param modo Si es "formulario", solo devuelve la informacion; si no, registra asistencia.
-	 * @return ResponseEntity con datos de la UID y, si aplica, info del alumno, curso y grupo.
+	 * @param modo Parámetro opcional que indica el modo de lectura (por ejemplo "formulario").
+	 * @return ResponseEntity con el EventoLectorDto resultante.
 	 */
 	@GetMapping("/lector/evento")
-	public ResponseEntity<?> procesarEvento(
+	public ResponseEntity<EventoLectorDto> procesarEvento(
 	        @RequestParam(required = false) String modo) {
 
 	    return ResponseEntity.ok(
 	            lectorEventoServicio.procesarEvento(modo)
 	    );
 	}
-    
+
+
+
+
 	/* METODOS CRUD DE LA TABLA ALUMNO */
 
 	/**
 	 * Obtiene los datos de un alumno por su ID.
 	 *
 	 * @param id ID del alumno a consultar.
-	 * @return ResponseEntity con AlumnoDto si se encuentra, 404 si no, 500 en caso de error.
+	 * @return ResponseEntity con AlumnoDto si se encuentra, 404 si no, 500 en caso
+	 *         de error.
 	 */
 	@GetMapping("/alumno/{idAlumno}")
 	public ResponseEntity<AlumnoDto> obtenerAlumno(@PathVariable("idAlumno") Long id) {
+
 	    Logs.ficheroLog("➡️ Solicitud para obtener alumno con ID: " + id);
+
 	    try {
 	        AlumnoDto alumno = alumnoServicio.obtenerAlumnoPorId(id);
+
 	        if (alumno != null) {
 	            Logs.ficheroLog("✅ Alumno encontrado con ID: " + id);
 	            return ResponseEntity.ok(alumno);
@@ -108,6 +108,7 @@ public class Controlador {
 	            Logs.ficheroLog("⚠️ No se encontró alumno con ID: " + id);
 	            return ResponseEntity.notFound().build();
 	        }
+
 	    } catch (Exception e) {
 	        Logs.ficheroLog("❌ Error al obtener alumno con ID " + id + ": " + e.getMessage());
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -122,8 +123,17 @@ public class Controlador {
 	@GetMapping("/alumnos")
 	public ArrayList<AlumnoDto> listaAlumnos() {
 	    Logs.ficheroLog("➡️ Solicitud para listar todos los alumnos");
-	    return alumnoServicio.obtenerTodosAlumnos();
+
+	    try {
+	        ArrayList<AlumnoDto> lista = alumnoServicio.obtenerTodosAlumnos();
+	        Logs.ficheroLog("✅ Lista de alumnos obtenida correctamente. Total: " + lista.size());
+	        return lista;
+	    } catch (Exception e) {
+	        Logs.ficheroLog("❌ Error al listar alumnos: " + e.getMessage());
+	        throw e; // re-lanzamos para que el controlador mantenga el comportamiento original
+	    }
 	}
+
 
 	/**
 	 * Guarda un alumno con su matriculación asociada.
@@ -133,16 +143,16 @@ public class Controlador {
 	 */
 	@PostMapping("/guardarAlumno")
 	public ResponseEntity<?> guardarAlumno(@RequestBody AlumnoConMatriculacionDto dto) {
-	    Logs.ficheroLog("➡️ Solicitud para guardar alumno: " + dto.toString());
-	    try {
-	        AlumnoConMatriculacionDto alumnoGuardado = alumnoServicio.guardarAlumnoConMatriculacion(dto);
-	        Logs.ficheroLog("✅ Alumno guardado exitosamente con ID: " + alumnoGuardado.getIdAlumno());
-	        return ResponseEntity.ok(alumnoGuardado);
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al guardar alumno: " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	                .body("Error al guardar alumno: " + e.getMessage());
-	    }
+		Logs.ficheroLog("➡️ Solicitud para guardar alumno: " + dto.toString());
+		try {
+			AlumnoConMatriculacionDto alumnoGuardado = alumnoServicio.guardarAlumnoConMatriculacion(dto);
+			Logs.ficheroLog("✅ Alumno guardado exitosamente con ID: " + alumnoGuardado.getIdAlumno());
+			return ResponseEntity.ok(alumnoGuardado);
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al guardar alumno: " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Error al guardar alumno: " + e.getMessage());
+		}
 	}
 
 	/**
@@ -154,20 +164,20 @@ public class Controlador {
 	 */
 	@PutMapping("/modificarAlumno/{idAlumno}")
 	public ResponseEntity<String> modificarAlumno(@PathVariable Long idAlumno, @RequestBody AlumnoDto dto) {
-	    Logs.ficheroLog("➡️ Solicitud para modificar alumno con ID: " + idAlumno);
-	    try {
-	        boolean modificado = alumnoServicio.modificarAlumno(idAlumno, dto);
-	        if (modificado) {
-	            Logs.ficheroLog("✅ Alumno modificado correctamente con ID: " + idAlumno);
-	            return ResponseEntity.ok("Alumno modificado correctamente");
-	        } else {
-	            Logs.ficheroLog("⚠️ Alumno no encontrado con ID: " + idAlumno);
-	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Alumno no encontrado");
-	        }
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al modificar alumno con ID " + idAlumno + ": " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al modificar alumno");
-	    }
+		Logs.ficheroLog("➡️ Solicitud para modificar alumno con ID: " + idAlumno);
+		try {
+			boolean modificado = alumnoServicio.modificarAlumno(idAlumno, dto);
+			if (modificado) {
+				Logs.ficheroLog("✅ Alumno modificado correctamente con ID: " + idAlumno);
+				return ResponseEntity.ok("Alumno modificado correctamente");
+			} else {
+				Logs.ficheroLog("⚠️ Alumno no encontrado con ID: " + idAlumno);
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Alumno no encontrado");
+			}
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al modificar alumno con ID " + idAlumno + ": " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al modificar alumno");
+		}
 	}
 
 	/**
@@ -178,20 +188,20 @@ public class Controlador {
 	 */
 	@DeleteMapping("/eliminarAlumno/{idAlumno}")
 	public ResponseEntity<String> eliminarAlumno(@PathVariable Long idAlumno) {
-	    Logs.ficheroLog("➡️ Solicitud para eliminar alumno con ID: " + idAlumno);
-	    try {
-	        boolean eliminado = alumnoServicio.borrarAlumno(idAlumno);
-	        if (eliminado) {
-	            Logs.ficheroLog("✅ Alumno eliminado correctamente con ID: " + idAlumno);
-	            return ResponseEntity.ok("Alumno eliminado correctamente");
-	        } else {
-	            Logs.ficheroLog("⚠️ Alumno no encontrado con ID: " + idAlumno);
-	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Alumno no encontrado");
-	        }
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al eliminar alumno con ID " + idAlumno + ": " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al eliminar alumno");
-	    }
+		Logs.ficheroLog("➡️ Solicitud para eliminar alumno con ID: " + idAlumno);
+		try {
+			boolean eliminado = alumnoServicio.borrarAlumno(idAlumno);
+			if (eliminado) {
+				Logs.ficheroLog("✅ Alumno eliminado correctamente con ID: " + idAlumno);
+				return ResponseEntity.ok("Alumno eliminado correctamente");
+			} else {
+				Logs.ficheroLog("⚠️ Alumno no encontrado con ID: " + idAlumno);
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Alumno no encontrado");
+			}
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al eliminar alumno con ID " + idAlumno + ": " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al eliminar alumno");
+		}
 	}
 
 	/**
@@ -203,17 +213,25 @@ public class Controlador {
 	@GetMapping("/alumno/{idAlumno}/conMatriculacion")
 	public ResponseEntity<?> obtenerAlumnoConMatriculacion(@PathVariable Long idAlumno) {
 	    Logs.ficheroLog("➡️ Solicitud para obtener alumno con matriculación ID: " + idAlumno);
-	    AlumnoConMatriculacionDto dto = alumnoServicio.obtenerAlumnoConMatriculacion(idAlumno);
 
-	    if (dto == null) {
-	        Logs.ficheroLog("⚠️ No se encontró el alumno o no tiene matriculación asociada ID: " + idAlumno);
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-	                .body("No se encontró el alumno o no tiene matriculación asociada");
+	    try {
+	        AlumnoConMatriculacionDto dto = alumnoServicio.obtenerAlumnoConMatriculacion(idAlumno);
+
+	        if (dto == null) {
+	            Logs.ficheroLog("⚠️ No se encontró el alumno o no tiene matriculación asociada ID: " + idAlumno);
+	            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+	                    .body("No se encontró el alumno o no tiene matriculación asociada");
+	        }
+
+	        Logs.ficheroLog("✅ Alumno con matriculación encontrado ID: " + idAlumno);
+	        return ResponseEntity.ok(dto);
+
+	    } catch (Exception e) {
+	        Logs.ficheroLog("❌ Error al obtener alumno con matriculación ID " + idAlumno + ": " + e.getMessage());
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno");
 	    }
-
-	    Logs.ficheroLog("✅ Alumno con matriculación encontrado ID: " + idAlumno);
-	    return ResponseEntity.ok(dto);
 	}
+
 
 	/* METODOS CRUD DE LA TABLA CURSOS */
 
@@ -224,37 +242,38 @@ public class Controlador {
 	 */
 	@GetMapping("/cursos")
 	public ArrayList<CursoDto> listaCursos() {
-	    Logs.ficheroLog("➡️ Solicitud para listar todos los cursos");
-	    try {
-	        return cursoServicio.obtenerTodosCursos();
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al listar cursos: " + e.getMessage());
-	        return new ArrayList<>();
-	    }
+		Logs.ficheroLog("➡️ Solicitud para listar todos los cursos");
+		try {
+			return cursoServicio.obtenerTodosCursos();
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al listar cursos: " + e.getMessage());
+			return new ArrayList<>();
+		}
 	}
 
 	/**
 	 * Obtiene los datos de un curso por su ID.
 	 *
 	 * @param idCurso ID del curso a consultar.
-	 * @return ResponseEntity con CursoDto si se encuentra, 404 si no, 500 en caso de error.
+	 * @return ResponseEntity con CursoDto si se encuentra, 404 si no, 500 en caso
+	 *         de error.
 	 */
 	@GetMapping("/curso/{idCurso}")
 	public ResponseEntity<CursoDto> obtenerCurso(@PathVariable Long idCurso) {
-	    Logs.ficheroLog("➡️ Solicitud para obtener curso con ID: " + idCurso);
-	    try {
-	        CursoDto curso = cursoServicio.obtenerCursoPorId(idCurso);
-	        if (curso != null) {
-	            Logs.ficheroLog("✅ Curso encontrado con ID: " + idCurso);
-	            return ResponseEntity.ok(curso);
-	        } else {
-	            Logs.ficheroLog("⚠️ No se encontró curso con ID: " + idCurso);
-	            return ResponseEntity.notFound().build();
-	        }
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al obtener curso con ID " + idCurso + ": " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-	    }
+		Logs.ficheroLog("➡️ Solicitud para obtener curso con ID: " + idCurso);
+		try {
+			CursoDto curso = cursoServicio.obtenerCursoPorId(idCurso);
+			if (curso != null) {
+				Logs.ficheroLog("✅ Curso encontrado con ID: " + idCurso);
+				return ResponseEntity.ok(curso);
+			} else {
+				Logs.ficheroLog("⚠️ No se encontró curso con ID: " + idCurso);
+				return ResponseEntity.notFound().build();
+			}
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al obtener curso con ID " + idCurso + ": " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
 	}
 
 	/**
@@ -265,54 +284,45 @@ public class Controlador {
 	 */
 	@PostMapping("/guardarCurso")
 	public ResponseEntity<?> guardarCurso(@RequestBody CursoDto dto) {
-	    Logs.ficheroLog("➡️ Solicitud para guardar curso: " + dto.getNombreCurso());
-	    try {
-	        CursoDto cursoGuardado = cursoServicio.mapearACursoDTO(cursoServicio.guardarCurso(dto));
-	        Logs.ficheroLog("✅ Curso guardado exitosamente con ID: " + cursoGuardado.getIdCurso());
-	        return ResponseEntity.ok(cursoGuardado);
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al guardar curso: " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al guardar curso");
-	    }
+		Logs.ficheroLog("➡️ Solicitud para guardar curso: " + dto.getNombreCurso());
+		try {
+			CursoDto cursoGuardado = cursoServicio.mapearACursoDTO(cursoServicio.guardarCurso(dto));
+			Logs.ficheroLog("✅ Curso guardado exitosamente con ID: " + cursoGuardado.getIdCurso());
+			return ResponseEntity.ok(cursoGuardado);
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al guardar curso: " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al guardar curso");
+		}
 	}
-	
-	
+
 	/**
 	 * Modifica los datos de un curso existente.
+	 * 
 	 * @param idCurso ID del curso a modificar
-	 * @param dto DTO con los nuevos datos del curso
+	 * @param dto     DTO con los nuevos datos del curso
 	 * @return ResponseEntity con el resultado de la operación
 	 */
 	@PutMapping("/modificarCurso/{idCurso}")
-	public ResponseEntity<String> modificarCurso(
-	        @PathVariable Long idCurso,
-	        @RequestBody CursoDto dto) {
+	public ResponseEntity<String> modificarCurso(@PathVariable Long idCurso, @RequestBody CursoDto dto) {
 
-	    Logs.ficheroLog("➡️ Solicitud para modificar curso con ID: " + idCurso);
+		Logs.ficheroLog("➡️ Solicitud para modificar curso con ID: " + idCurso);
 
-	    try {
-	        boolean modificado = cursoServicio.modificarCurso(idCurso, dto);
+		try {
+			boolean modificado = cursoServicio.modificarCurso(idCurso, dto);
 
-	        if (modificado) {
-	            Logs.ficheroLog("✅ Curso modificado correctamente con ID: " + idCurso);
-	            return ResponseEntity.ok("Curso modificado correctamente");
-	        } else {
-	            Logs.ficheroLog("⚠️ Curso no encontrado con ID: " + idCurso);
-	            return ResponseEntity
-	                    .status(HttpStatus.NOT_FOUND)
-	                    .body("Curso no encontrado");
-	        }
+			if (modificado) {
+				Logs.ficheroLog("✅ Curso modificado correctamente con ID: " + idCurso);
+				return ResponseEntity.ok("Curso modificado correctamente");
+			} else {
+				Logs.ficheroLog("⚠️ Curso no encontrado con ID: " + idCurso);
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Curso no encontrado");
+			}
 
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al modificar curso con ID " + idCurso + ": " + e.getMessage());
-	        return ResponseEntity
-	                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-	                .body("Error al modificar curso");
-	    }
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al modificar curso con ID " + idCurso + ": " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al modificar curso");
+		}
 	}
-
-	
-	
 
 	/**
 	 * Elimina un curso por su ID.
@@ -322,20 +332,20 @@ public class Controlador {
 	 */
 	@DeleteMapping("/eliminarCurso/{idCurso}")
 	public ResponseEntity<String> eliminarCurso(@PathVariable Long idCurso) {
-	    Logs.ficheroLog("➡️ Solicitud para eliminar curso con ID: " + idCurso);
-	    try {
-	        boolean eliminado = cursoServicio.borrarCurso(idCurso);
-	        if (eliminado) {
-	            Logs.ficheroLog("✅ Curso eliminado correctamente con ID: " + idCurso);
-	            return ResponseEntity.ok("Curso eliminado correctamente");
-	        } else {
-	            Logs.ficheroLog("⚠️ Curso no encontrado con ID: " + idCurso);
-	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Curso no encontrado");
-	        }
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al eliminar curso con ID " + idCurso + ": " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al eliminar curso");
-	    }
+		Logs.ficheroLog("➡️ Solicitud para eliminar curso con ID: " + idCurso);
+		try {
+			boolean eliminado = cursoServicio.borrarCurso(idCurso);
+			if (eliminado) {
+				Logs.ficheroLog("✅ Curso eliminado correctamente con ID: " + idCurso);
+				return ResponseEntity.ok("Curso eliminado correctamente");
+			} else {
+				Logs.ficheroLog("⚠️ Curso no encontrado con ID: " + idCurso);
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Curso no encontrado");
+			}
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al eliminar curso con ID " + idCurso + ": " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al eliminar curso");
+		}
 	}
 
 	/* METODOS CRUD DE LA TABLA GRUPO */
@@ -347,37 +357,38 @@ public class Controlador {
 	 */
 	@GetMapping("/grupos")
 	public ArrayList<GrupoDto> listaGrupos() {
-	    Logs.ficheroLog("➡️ Solicitud para listar todos los grupos");
-	    try {
-	        return grupoServicio.obtenerTodosGrupos();
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al listar grupos: " + e.getMessage());
-	        return new ArrayList<>();
-	    }
+		Logs.ficheroLog("➡️ Solicitud para listar todos los grupos");
+		try {
+			return grupoServicio.obtenerTodosGrupos();
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al listar grupos: " + e.getMessage());
+			return new ArrayList<>();
+		}
 	}
 
 	/**
 	 * Obtiene los datos de un grupo por su ID.
 	 *
 	 * @param idGrupo ID del grupo a consultar.
-	 * @return ResponseEntity con GrupoDto si se encuentra, 404 si no, 500 en caso de error.
+	 * @return ResponseEntity con GrupoDto si se encuentra, 404 si no, 500 en caso
+	 *         de error.
 	 */
 	@GetMapping("/grupo/{idGrupo}")
 	public ResponseEntity<GrupoDto> obtenerGrupo(@PathVariable Long idGrupo) {
-	    Logs.ficheroLog("➡️ Solicitud para obtener grupo con ID: " + idGrupo);
-	    try {
-	        GrupoDto grupo = grupoServicio.obtenerGrupoPorId(idGrupo);
-	        if (grupo != null) {
-	            Logs.ficheroLog("✅ Grupo encontrado con ID: " + idGrupo);
-	            return ResponseEntity.ok(grupo);
-	        } else {
-	            Logs.ficheroLog("⚠️ No se encontró grupo con ID: " + idGrupo);
-	            return ResponseEntity.notFound().build();
-	        }
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al obtener grupo con ID " + idGrupo + ": " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-	    }
+		Logs.ficheroLog("➡️ Solicitud para obtener grupo con ID: " + idGrupo);
+		try {
+			GrupoDto grupo = grupoServicio.obtenerGrupoPorId(idGrupo);
+			if (grupo != null) {
+				Logs.ficheroLog("✅ Grupo encontrado con ID: " + idGrupo);
+				return ResponseEntity.ok(grupo);
+			} else {
+				Logs.ficheroLog("⚠️ No se encontró grupo con ID: " + idGrupo);
+				return ResponseEntity.notFound().build();
+			}
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al obtener grupo con ID " + idGrupo + ": " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
 	}
 
 	/**
@@ -388,19 +399,19 @@ public class Controlador {
 	 */
 	@GetMapping("/grupos/curso/{idCurso}")
 	public ResponseEntity<List<GrupoDto>> obtenerGruposPorCurso(@PathVariable Long idCurso) {
-	    Logs.ficheroLog("➡️ Solicitud para obtener grupos del curso con ID: " + idCurso);
-	    try {
-	        List<GrupoDto> grupos = grupoServicio.obtenerGruposPorCurso(idCurso);
-	        if (grupos.isEmpty()) {
-	            Logs.ficheroLog("⚠️ No se encontraron grupos para el curso ID: " + idCurso);
-	            return ResponseEntity.notFound().build();
-	        }
-	        Logs.ficheroLog("✅ Se encontraron " + grupos.size() + " grupos para el curso ID: " + idCurso);
-	        return ResponseEntity.ok(grupos);
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al obtener grupos por curso: " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-	    }
+		Logs.ficheroLog("➡️ Solicitud para obtener grupos del curso con ID: " + idCurso);
+		try {
+			List<GrupoDto> grupos = grupoServicio.obtenerGruposPorCurso(idCurso);
+			if (grupos.isEmpty()) {
+				Logs.ficheroLog("⚠️ No se encontraron grupos para el curso ID: " + idCurso);
+				return ResponseEntity.notFound().build();
+			}
+			Logs.ficheroLog("✅ Se encontraron " + grupos.size() + " grupos para el curso ID: " + idCurso);
+			return ResponseEntity.ok(grupos);
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al obtener grupos por curso: " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
 	}
 
 	/**
@@ -411,52 +422,45 @@ public class Controlador {
 	 */
 	@PostMapping("/guardarGrupo")
 	public ResponseEntity<?> guardarGrupo(@RequestBody GrupoDto dto) {
-	    Logs.ficheroLog("➡️ Solicitud para guardar grupo: " + dto.getNombreGrupo());
-	    try {
-	        GrupoDto grupoGuardado = grupoServicio.mapearAGrupoDTO(grupoServicio.guardarGrupo(dto));
-	        Logs.ficheroLog("✅ Grupo guardado exitosamente con ID: " + grupoGuardado.getIdGrupo());
-	        return ResponseEntity.ok(grupoGuardado);
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al guardar grupo: " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al guardar grupo");
-	    }
+		Logs.ficheroLog("➡️ Solicitud para guardar grupo: " + dto.getNombreGrupo());
+		try {
+			GrupoDto grupoGuardado = grupoServicio.mapearAGrupoDTO(grupoServicio.guardarGrupo(dto));
+			Logs.ficheroLog("✅ Grupo guardado exitosamente con ID: " + grupoGuardado.getIdGrupo());
+			return ResponseEntity.ok(grupoGuardado);
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al guardar grupo: " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al guardar grupo");
+		}
 	}
-	
-	   /**
-     * Modifica un grupo existente.
-     *
-     * @param idGrupo ID del grupo a modificar
-     * @param dto     DTO con los nuevos datos del grupo
-     * @return ResponseEntity con el resultado de la operación
-     */
-    @PutMapping("/modificarGrupo/{idGrupo}")
-    public ResponseEntity<String> modificarGrupo(
-            @PathVariable Long idGrupo,
-            @RequestBody GrupoDto dto) {
 
-        Logs.ficheroLog("➡️ Solicitud para modificar grupo con ID: " + idGrupo);
+	/**
+	 * Modifica un grupo existente.
+	 *
+	 * @param idGrupo ID del grupo a modificar
+	 * @param dto     DTO con los nuevos datos del grupo
+	 * @return ResponseEntity con el resultado de la operación
+	 */
+	@PutMapping("/modificarGrupo/{idGrupo}")
+	public ResponseEntity<String> modificarGrupo(@PathVariable Long idGrupo, @RequestBody GrupoDto dto) {
 
-        try {
-            boolean modificado = grupoServicio.modificarGrupo(idGrupo, dto);
+		Logs.ficheroLog("➡️ Solicitud para modificar grupo con ID: " + idGrupo);
 
-            if (modificado) {
-                Logs.ficheroLog("✅ Grupo modificado correctamente con ID: " + idGrupo);
-                return ResponseEntity.ok("Grupo modificado correctamente");
-            } else {
-                Logs.ficheroLog("⚠️ Grupo no encontrado con ID: " + idGrupo);
-                return ResponseEntity
-                        .status(HttpStatus.NOT_FOUND)
-                        .body("Grupo no encontrado");
-            }
+		try {
+			boolean modificado = grupoServicio.modificarGrupo(idGrupo, dto);
 
-        } catch (Exception e) {
-            Logs.ficheroLog("❌ Error al modificar grupo con ID " + idGrupo + ": " + e.getMessage());
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al modificar grupo");
-        }
-    }
+			if (modificado) {
+				Logs.ficheroLog("✅ Grupo modificado correctamente con ID: " + idGrupo);
+				return ResponseEntity.ok("Grupo modificado correctamente");
+			} else {
+				Logs.ficheroLog("⚠️ Grupo no encontrado con ID: " + idGrupo);
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Grupo no encontrado");
+			}
 
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al modificar grupo con ID " + idGrupo + ": " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al modificar grupo");
+		}
+	}
 
 	/**
 	 * Elimina un grupo por su ID.
@@ -466,20 +470,20 @@ public class Controlador {
 	 */
 	@DeleteMapping("/eliminarGrupo/{idGrupo}")
 	public ResponseEntity<String> eliminarGrupo(@PathVariable Long idGrupo) {
-	    Logs.ficheroLog("➡️ Solicitud para eliminar grupo con ID: " + idGrupo);
-	    try {
-	        boolean eliminado = grupoServicio.borrarGrupo(idGrupo);
-	        if (eliminado) {
-	            Logs.ficheroLog("✅ Grupo eliminado correctamente con ID: " + idGrupo);
-	            return ResponseEntity.ok("Grupo eliminado correctamente");
-	        } else {
-	            Logs.ficheroLog("⚠️ Grupo no encontrado con ID: " + idGrupo);
-	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Grupo no encontrado");
-	        }
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al eliminar grupo con ID " + idGrupo + ": " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al eliminar grupo");
-	    }
+		Logs.ficheroLog("➡️ Solicitud para eliminar grupo con ID: " + idGrupo);
+		try {
+			boolean eliminado = grupoServicio.borrarGrupo(idGrupo);
+			if (eliminado) {
+				Logs.ficheroLog("✅ Grupo eliminado correctamente con ID: " + idGrupo);
+				return ResponseEntity.ok("Grupo eliminado correctamente");
+			} else {
+				Logs.ficheroLog("⚠️ Grupo no encontrado con ID: " + idGrupo);
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Grupo no encontrado");
+			}
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al eliminar grupo con ID " + idGrupo + ": " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al eliminar grupo");
+		}
 	}
 
 	/* METODOS CRUD DE LA TABLA MATRICULACION */
@@ -492,18 +496,18 @@ public class Controlador {
 	 */
 	@PostMapping("/guardarMatriculacion")
 	public ResponseEntity<?> crearMatriculacion(@RequestBody MatriculacionDto dto) {
-	    Logs.ficheroLog("➡️ Solicitud para crear matriculación: " + dto.toString());
-	    try {
-	        MatriculacionEntidad nueva = matriculacionServicio.crearMatriculacion(dto);
-	        Logs.ficheroLog("✅ Matriculación creada con ID: " + nueva.getIdMatriculacion());
-	        return ResponseEntity.ok(nueva);
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al crear matriculación: " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-	                .body("Error al crear la matriculación: " + e.getMessage());
-	    }
+		Logs.ficheroLog("➡️ Solicitud para crear matriculación: " + dto.toString());
+		try {
+			MatriculacionEntidad nueva = matriculacionServicio.crearMatriculacion(dto);
+			Logs.ficheroLog("✅ Matriculación creada con ID: " + nueva.getIdMatriculacion());
+			return ResponseEntity.ok(nueva);
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al crear matriculación: " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body("Error al crear la matriculación: " + e.getMessage());
+		}
 	}
-	
+
 	/**
 	 * Modifica los datos de una matrícula existente.
 	 *
@@ -513,23 +517,22 @@ public class Controlador {
 	 */
 	@PutMapping("/modificarMatriculacion/{idMatriculacion}")
 	public ResponseEntity<String> modificarMatriculacion(@PathVariable Long idMatriculacion,
-	                                                     @RequestBody MatriculacionDto dto) {
-	    Logs.ficheroLog("➡️ Solicitud para modificar matrícula con ID: " + idMatriculacion);
-	    try {
-	        boolean modificado = matriculacionServicio.modificarMatriculacion(idMatriculacion, dto);
-	        if (modificado) {
-	            Logs.ficheroLog("✅ Matrícula modificada correctamente con ID: " + idMatriculacion);
-	            return ResponseEntity.ok("Matrícula modificada correctamente");
-	        } else {
-	            Logs.ficheroLog("⚠️ Matrícula no encontrada con ID: " + idMatriculacion);
-	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Matrícula no encontrada");
-	        }
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al modificar matrícula con ID " + idMatriculacion + ": " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al modificar matrícula");
-	    }
+			@RequestBody MatriculacionDto dto) {
+		Logs.ficheroLog("➡️ Solicitud para modificar matrícula con ID: " + idMatriculacion);
+		try {
+			boolean modificado = matriculacionServicio.modificarMatriculacion(idMatriculacion, dto);
+			if (modificado) {
+				Logs.ficheroLog("✅ Matrícula modificada correctamente con ID: " + idMatriculacion);
+				return ResponseEntity.ok("Matrícula modificada correctamente");
+			} else {
+				Logs.ficheroLog("⚠️ Matrícula no encontrada con ID: " + idMatriculacion);
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Matrícula no encontrada");
+			}
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al modificar matrícula con ID " + idMatriculacion + ": " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al modificar matrícula");
+		}
 	}
-
 
 	/**
 	 * Obtiene la lista de todas las matriculaciones.
@@ -538,41 +541,39 @@ public class Controlador {
 	 */
 	@GetMapping("/matriculaciones")
 	public List<MatriculacionDto> listarMatriculaciones() {
-	    Logs.ficheroLog("➡️ Solicitud para listar todas las matriculaciones");
-	    try {
-	        return matriculacionServicio.obtenerTodasDto();
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al listar matriculaciones: " + e.getMessage());
-	        return new ArrayList<>();
-	    }
+		Logs.ficheroLog("➡️ Solicitud para listar todas las matriculaciones");
+		try {
+			return matriculacionServicio.obtenerTodasDto();
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al listar matriculaciones: " + e.getMessage());
+			return new ArrayList<>();
+		}
 	}
 
 	/**
 	 * Obtiene una matriculación por su ID.
 	 *
 	 * @param idMatriculacion ID de la matriculación.
-	 * @return ResponseEntity con la matriculación si se encuentra, 404 si no, 500 en caso de error.
+	 * @return ResponseEntity con la matriculación si se encuentra, 404 si no, 500
+	 *         en caso de error.
 	 */
 	@GetMapping("/matriculacion/{idMatriculacion}")
 	public ResponseEntity<?> obtenerPorId(@PathVariable Long idMatriculacion) {
-	    Logs.ficheroLog("➡️ Solicitud para obtener matriculación con ID: " + idMatriculacion);
-	    try {
-	        return matriculacionServicio.obtenerPorId(idMatriculacion)
-	                .map(m -> {
-	                    Logs.ficheroLog("✅ Matriculación encontrada con ID: " + idMatriculacion);
-	                    return ResponseEntity.ok(m);
-	                })
-	                .orElseGet(() -> {
-	                    Logs.ficheroLog("⚠️ Matriculación no encontrada con ID: " + idMatriculacion);
-	                    return ResponseEntity.notFound().build();
-	                });
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al obtener matriculación con ID " + idMatriculacion + ": " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-	    }
+		Logs.ficheroLog("➡️ Solicitud para obtener matriculación con ID: " + idMatriculacion);
+		try {
+			return matriculacionServicio.obtenerPorId(idMatriculacion).map(m -> {
+				Logs.ficheroLog("✅ Matriculación encontrada con ID: " + idMatriculacion);
+				return ResponseEntity.ok(m);
+			}).orElseGet(() -> {
+				Logs.ficheroLog("⚠️ Matriculación no encontrada con ID: " + idMatriculacion);
+				return ResponseEntity.notFound().build();
+			});
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al obtener matriculación con ID " + idMatriculacion + ": " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
 	}
-	
-	
+
 	/**
 	 * Lista todas las matriculaciones de un alumno específico.
 	 *
@@ -581,15 +582,14 @@ public class Controlador {
 	 */
 	@GetMapping("/matriculaciones/alumno/{idAlumno}")
 	public List<MatriculacionDto> listarMatriculacionesPorAlumno(@PathVariable("idAlumno") Long idAlumno) {
-	    Logs.ficheroLog("➡️ Solicitud para listar matriculaciones del alumno ID: " + idAlumno);
-	    try {
-	        return matriculacionServicio.obtenerPorAlumno(idAlumno);
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al listar matriculaciones por alumno: " + e.getMessage());
-	        return new ArrayList<>();
-	    }
+		Logs.ficheroLog("➡️ Solicitud para listar matriculaciones del alumno ID: " + idAlumno);
+		try {
+			return matriculacionServicio.obtenerPorAlumno(idAlumno);
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al listar matriculaciones por alumno: " + e.getMessage());
+			return new ArrayList<>();
+		}
 	}
-
 
 	/**
 	 * Elimina una matriculación por su ID.
@@ -599,67 +599,64 @@ public class Controlador {
 	 */
 	@DeleteMapping("/eliminarMatriculacion/{idMatriculacion}")
 	public ResponseEntity<?> eliminarMatriculacion(@PathVariable Long idMatriculacion) {
-	    Logs.ficheroLog("➡️ Solicitud para eliminar matriculación con ID: " + idMatriculacion);
-	    try {
-	        boolean eliminado = matriculacionServicio.eliminarMatriculacion(idMatriculacion);
-	        if (eliminado) {
-	            Logs.ficheroLog("✅ Matriculación eliminada correctamente con ID: " + idMatriculacion);
-	            return ResponseEntity.ok("Matriculación eliminada correctamente");
-	        } else {
-	            Logs.ficheroLog("⚠️ Matriculación no encontrada con ID: " + idMatriculacion);
-	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Matriculación no encontrada");
-	        }
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al eliminar matriculación con ID " + idMatriculacion + ": " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al eliminar matriculación");
-	    }
+		Logs.ficheroLog("➡️ Solicitud para eliminar matriculación con ID: " + idMatriculacion);
+		try {
+			boolean eliminado = matriculacionServicio.eliminarMatriculacion(idMatriculacion);
+			if (eliminado) {
+				Logs.ficheroLog("✅ Matriculación eliminada correctamente con ID: " + idMatriculacion);
+				return ResponseEntity.ok("Matriculación eliminada correctamente");
+			} else {
+				Logs.ficheroLog("⚠️ Matriculación no encontrada con ID: " + idMatriculacion);
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Matriculación no encontrada");
+			}
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al eliminar matriculación con ID " + idMatriculacion + ": " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al eliminar matriculación");
+		}
 	}
-
-
 
 	/**
 	 * Modifica una asistencia existente.
 	 *
-	 * @param idAsistencia ID de la asistencia a modificar.
+	 * @param idAsistencia  ID de la asistencia a modificar.
 	 * @param asistenciaDto DTO con los nuevos datos de la asistencia.
 	 * @return ResponseEntity con la asistencia modificada o mensaje de error.
 	 */
 	@PutMapping("/modificarAsistencia/{idAsistencia}")
-	public ResponseEntity<?> modificarAsistencia(
-	        @PathVariable Long idAsistencia,
-	        @RequestBody AsistenciaDto asistenciaDto) {
+	public ResponseEntity<?> modificarAsistencia(@PathVariable Long idAsistencia,
+			@RequestBody AsistenciaDto asistenciaDto) {
 
-	    Logs.ficheroLog("➡️ Solicitud para modificar asistencia con ID: " + idAsistencia);
+		Logs.ficheroLog("➡️ Solicitud para modificar asistencia con ID: " + idAsistencia);
 
-	    try {
-	        boolean resultado = asistenciaServicio.modificarAsistencia(idAsistencia, asistenciaDto);
-	        Logs.ficheroLog("Resultado de modificación asistencia ID " + idAsistencia + ": " + resultado);
+		try {
+			boolean resultado = asistenciaServicio.modificarAsistencia(idAsistencia, asistenciaDto);
+			Logs.ficheroLog("Resultado de modificación asistencia ID " + idAsistencia + ": " + resultado);
 
-	        if (resultado) {
-	            AsistenciaEntidad asistenciaActualizada = asistenciaInterfaz.findById(idAsistencia).orElse(null);
-	            if (asistenciaActualizada == null) {
-	                Logs.ficheroLog("⚠️ Asistencia no encontrada ID: " + idAsistencia);
-	                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Asistencia no encontrada");
-	            }
+			if (resultado) {
+				AsistenciaEntidad asistenciaActualizada = asistenciaInterfaz.findById(idAsistencia).orElse(null);
+				if (asistenciaActualizada == null) {
+					Logs.ficheroLog("⚠️ Asistencia no encontrada ID: " + idAsistencia);
+					return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Asistencia no encontrada");
+				}
 
-	            AsistenciaDto dto = new AsistenciaDto();
-	            dto.setIdAsistencia(asistenciaActualizada.getIdAsistencia());
-	            dto.setEstado(asistenciaActualizada.getEstado());
-	            dto.setHoraEntrada(asistenciaActualizada.getHoraEntrada());
-	            dto.setHoraSalida(asistenciaActualizada.getHoraSalida());
-	            dto.setJustificarModificacion(asistenciaActualizada.getJustificar_modificacion());
-	            dto.setFecha(asistenciaActualizada.getFecha());
+				AsistenciaDto dto = new AsistenciaDto();
+				dto.setIdAsistencia(asistenciaActualizada.getIdAsistencia());
+				dto.setEstado(asistenciaActualizada.getEstado());
+				dto.setHoraEntrada(asistenciaActualizada.getHoraEntrada());
+				dto.setHoraSalida(asistenciaActualizada.getHoraSalida());
+				dto.setJustificarModificacion(asistenciaActualizada.getJustificar_modificacion());
+				dto.setFecha(asistenciaActualizada.getFecha());
 
-	            Logs.ficheroLog("✅ Asistencia modificada correctamente ID: " + idAsistencia);
-	            return ResponseEntity.ok(dto);
-	        } else {
-	            Logs.ficheroLog("⚠️ Asistencia no encontrada ID: " + idAsistencia);
-	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Asistencia no encontrada");
-	        }
-	    } catch (Exception e) {
-	        Logs.ficheroLog("❌ Error al modificar asistencia ID " + idAsistencia + ": " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al modificar asistencia");
-	    }
+				Logs.ficheroLog("✅ Asistencia modificada correctamente ID: " + idAsistencia);
+				return ResponseEntity.ok(dto);
+			} else {
+				Logs.ficheroLog("⚠️ Asistencia no encontrada ID: " + idAsistencia);
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Asistencia no encontrada");
+			}
+		} catch (Exception e) {
+			Logs.ficheroLog("❌ Error al modificar asistencia ID " + idAsistencia + ": " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al modificar asistencia");
+		}
 	}
 
 	/**
@@ -670,16 +667,23 @@ public class Controlador {
 	 * @return Lista de asistencias del día actual.
 	 */
 	@GetMapping("/asistencia/{curso}/{grupo}")
-	public ResponseEntity<List<AsistenciaDto>> obtenerAsistenciaDeHoy(
-	        @PathVariable String curso,
+	public ResponseEntity<List<AsistenciaDto>> obtenerAsistenciaDeHoy(@PathVariable String curso,
 	        @PathVariable String grupo) {
 
 	    Logs.ficheroLog("➡️ Solicitud para obtener asistencias de hoy Curso: " + curso + ", Grupo: " + grupo);
-	    LocalDate hoy = LocalDate.now();
-	    List<AsistenciaDto> lista = asistenciaServicio.obtenerAsistenciaPorCursoYGrupoEnFecha(curso, grupo, hoy);
-	    Logs.ficheroLog("✅ Asistencias obtenidas: " + lista.size());
-	    return ResponseEntity.ok(lista);
+
+	    try {
+	        LocalDate hoy = LocalDate.now();
+	        List<AsistenciaDto> lista = asistenciaServicio.obtenerAsistenciaPorCursoYGrupoEnFecha(curso, grupo, hoy);
+	        Logs.ficheroLog("✅ Asistencias obtenidas: " + lista.size());
+	        return ResponseEntity.ok(lista);
+
+	    } catch (Exception e) {
+	        Logs.ficheroLog("❌ Error al obtener asistencias de hoy Curso: " + curso + ", Grupo: " + grupo + ". Motivo: " + e.getMessage());
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+	    }
 	}
+
 
 	/**
 	 * Obtiene asistencias por curso, grupo y fecha específica.
@@ -695,11 +699,21 @@ public class Controlador {
 	        @RequestParam String grupo,
 	        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
 
-	    Logs.ficheroLog("➡️ Solicitud para obtener asistencias Curso: " + curso + ", Grupo: " + grupo + ", Fecha: " + fecha);
-	    List<AsistenciaDto> asistencias = asistenciaServicio.obtenerAsistenciasPorCursoGrupoYFecha(curso, grupo, fecha);
-	    Logs.ficheroLog("✅ Asistencias obtenidas: " + asistencias.size());
-	    return ResponseEntity.ok(asistencias);
+	    Logs.ficheroLog(
+	            "➡️ Solicitud para obtener asistencias Curso: " + curso + ", Grupo: " + grupo + ", Fecha: " + fecha);
+
+	    try {
+	        List<AsistenciaDto> asistencias = asistenciaServicio.obtenerAsistenciasPorCursoGrupoYFecha(curso, grupo, fecha);
+	        Logs.ficheroLog("✅ Asistencias obtenidas: " + asistencias.size());
+	        return ResponseEntity.ok(asistencias);
+
+	    } catch (Exception e) {
+	        Logs.ficheroLog("❌ Error al obtener asistencias Curso: " + curso + ", Grupo: " + grupo + ", Fecha: " + fecha
+	                + ". Motivo: " + e.getMessage());
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+	    }
 	}
+
 
 	/**
 	 * Obtiene todas las asistencias registradas.
@@ -709,10 +723,18 @@ public class Controlador {
 	@GetMapping("/asistencias")
 	public ResponseEntity<List<AsistenciaDto>> verTodasAsistencias() {
 	    Logs.ficheroLog("➡️ Solicitud para obtener todas las asistencias");
-	    List<AsistenciaDto> lista = asistenciaServicio.obtenerTodasAsistencias();
-	    Logs.ficheroLog("✅ Total asistencias obtenidas: " + lista.size());
-	    return ResponseEntity.ok(lista);
+
+	    try {
+	        List<AsistenciaDto> lista = asistenciaServicio.obtenerTodasAsistencias();
+	        Logs.ficheroLog("✅ Total asistencias obtenidas: " + lista.size());
+	        return ResponseEntity.ok(lista);
+
+	    } catch (Exception e) {
+	        Logs.ficheroLog("❌ Error al obtener todas las asistencias: " + e.getMessage());
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+	    }
 	}
+
 
 	/**
 	 * Lista asistencias por fecha específica.
@@ -725,16 +747,23 @@ public class Controlador {
 	        @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
 
 	    Logs.ficheroLog("➡️ Solicitud para obtener asistencias por fecha: " + fecha);
-	    List<AsistenciaDto> lista = asistenciaServicio.obtenerPorFecha(fecha);
-	    Logs.ficheroLog("✅ Asistencias obtenidas: " + lista.size());
-	    return ResponseEntity.ok(lista);
+
+	    try {
+	        List<AsistenciaDto> lista = asistenciaServicio.obtenerPorFecha(fecha);
+	        Logs.ficheroLog("✅ Asistencias obtenidas: " + lista.size());
+	        return ResponseEntity.ok(lista);
+
+	    } catch (Exception e) {
+	        Logs.ficheroLog("❌ Error al obtener asistencias por fecha " + fecha + ": " + e.getMessage());
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+	    }
 	}
 
 	/**
 	 * Obtiene asistencias de un alumno por estado y año escolar.
 	 *
-	 * @param alumnoId ID del alumno.
-	 * @param estado Estado de la asistencia a filtrar (ej. PRESENTE, FALTA).
+	 * @param alumnoId    ID del alumno.
+	 * @param estado      Estado de la asistencia a filtrar (ej. PRESENTE, FALTA).
 	 * @param anioEscolar Año escolar para filtrar.
 	 * @return ResponseEntity con la lista de asistencias encontradas.
 	 */
@@ -744,50 +773,80 @@ public class Controlador {
 	        @RequestParam String estado,
 	        @RequestParam String anioEscolar) {
 
-	    Logs.ficheroLog("➡️ Solicitud para obtener asistencias AlumnoID: " + alumnoId + ", Estado: " + estado + ", Año escolar: " + anioEscolar);
-	    List<AsistenciaDto> lista = asistenciaServicio.obtenerPorAlumnoEstadoYAnio(alumnoId, estado, anioEscolar);
-	    Logs.ficheroLog("✅ Asistencias obtenidas: " + lista.size());
-	    return ResponseEntity.ok(lista);
+	    Logs.ficheroLog("➡️ Solicitud para obtener asistencias AlumnoID: " + alumnoId + ", Estado: " + estado
+	            + ", Año escolar: " + anioEscolar);
+
+	    try {
+	        List<AsistenciaDto> lista = asistenciaServicio.obtenerPorAlumnoEstadoYAnio(alumnoId, estado, anioEscolar);
+	        Logs.ficheroLog("✅ Asistencias obtenidas: " + lista.size());
+	        return ResponseEntity.ok(lista);
+
+	    } catch (Exception e) {
+	        Logs.ficheroLog("❌ Error al obtener asistencias AlumnoID: " + alumnoId + ", Estado: " + estado
+	                + ", Año escolar: " + anioEscolar + ". Motivo: " + e.getMessage());
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+	    }
 	}
+
 
 	/**
 	 * Obtiene asistencias de un alumno en un rango de fechas.
 	 *
 	 * @param alumnoId ID del alumno.
-	 * @param desde Fecha de inicio del rango.
-	 * @param hasta Fecha final del rango.
-	 * @return ResponseEntity con la lista de asistencias encontradas dentro del rango.
+	 * @param desde    Fecha de inicio del rango.
+	 * @param hasta    Fecha final del rango.
+	 * @return ResponseEntity con la lista de asistencias encontradas dentro del
+	 *         rango.
 	 */
 	@GetMapping("/asistencia/rango/{alumnoId}")
-	public ResponseEntity<List<AsistenciaDto>> obtenerPorRango(
-	        @PathVariable Long alumnoId,
+	public ResponseEntity<List<AsistenciaDto>> obtenerPorRango(@PathVariable Long alumnoId,
 	        @RequestParam("desde") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
 	        @RequestParam("hasta") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
 
-	    Logs.ficheroLog("➡️ Solicitud para obtener asistencias AlumnoID: " + alumnoId + " desde " + desde + " hasta " + hasta);
-	    List<AsistenciaDto> asistencias = asistenciaServicio.obtenerPorRango(alumnoId, desde, hasta);
-	    Logs.ficheroLog("✅ Asistencias obtenidas: " + asistencias.size());
-	    return ResponseEntity.ok(asistencias);
+	    Logs.ficheroLog(
+	            "➡️ Solicitud para obtener asistencias AlumnoID: " + alumnoId + " desde " + desde + " hasta " + hasta);
+
+	    try {
+	        List<AsistenciaDto> asistencias = asistenciaServicio.obtenerPorRango(alumnoId, desde, hasta);
+	        Logs.ficheroLog("✅ Asistencias obtenidas: " + asistencias.size());
+	        return ResponseEntity.ok(asistencias);
+
+	    } catch (Exception e) {
+	        Logs.ficheroLog("❌ Error al obtener asistencias por rango AlumnoID: " + alumnoId +
+	                " desde " + desde + " hasta " + hasta + ". Motivo: " + e.getMessage());
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+	    }
 	}
 
+
 	/**
-	 * Obtiene el conteo de estados de asistencias para un alumno en un rango de fechas.
+	 * Obtiene el conteo de estados de asistencias para un alumno en un rango de
+	 * fechas.
 	 *
 	 * @param alumnoId ID del alumno.
-	 * @param desde Fecha de inicio del rango.
-	 * @param hasta Fecha final del rango.
-	 * @return ResponseEntity con un mapa que contiene la cantidad de cada estado de asistencia.
+	 * @param desde    Fecha de inicio del rango.
+	 * @param hasta    Fecha final del rango.
+	 * @return ResponseEntity con un mapa que contiene la cantidad de cada estado de
+	 *         asistencia.
 	 */
 	@GetMapping("/asistencia/conteoEstados/{alumnoId}")
-	public ResponseEntity<Map<String, Integer>> obtenerConteoEstados(
-	        @PathVariable Long alumnoId,
+	public ResponseEntity<Map<String, Integer>> obtenerConteoEstados(@PathVariable Long alumnoId,
 	        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
 	        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
 
-	    Logs.ficheroLog("➡️ Solicitud para obtener conteo de estados AlumnoID: " + alumnoId + " desde " + desde + " hasta " + hasta);
-	    Map<String, Integer> conteo = asistenciaServicio.obtenerConteoEstados(alumnoId, desde, hasta);
-	    Logs.ficheroLog("✅ Conteo obtenido: " + conteo.toString());
-	    return ResponseEntity.ok(conteo);
+	    Logs.ficheroLog("➡️ Solicitud para obtener conteo de estados AlumnoID: " + alumnoId + " desde " + desde
+	            + " hasta " + hasta);
+
+	    try {
+	        Map<String, Integer> conteo = asistenciaServicio.obtenerConteoEstados(alumnoId, desde, hasta);
+	        Logs.ficheroLog("✅ Conteo obtenido: " + conteo.toString());
+	        return ResponseEntity.ok(conteo);
+
+	    } catch (Exception e) {
+	        Logs.ficheroLog("❌ Error al obtener conteo de estados AlumnoID: " + alumnoId + " desde " + desde
+	                + " hasta " + hasta + ". Motivo: " + e.getMessage());
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+	    }
 	}
 
 

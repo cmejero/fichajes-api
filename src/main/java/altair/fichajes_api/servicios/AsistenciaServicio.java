@@ -547,4 +547,6 @@ public class AsistenciaServicio {
 		throw new RuntimeException("La asistencia ya está completa");
 	}
 
+
+
 }

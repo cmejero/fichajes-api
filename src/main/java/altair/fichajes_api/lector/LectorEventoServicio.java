@@ -1,79 +1,72 @@
 package altair.fichajes_api.lector;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import altair.fichajes_api.dtos.EventoLectorDto;
 import altair.fichajes_api.entidad.MatriculacionEntidad;
 import altair.fichajes_api.repositorios.MatriculacionInterfaz;
 import altair.fichajes_api.servicios.AsistenciaServicio;
 import altair.fichajes_api.utilidades.Utilidades;
 
-/**
- * Servicio encargado de procesar eventos del lector NFC. Permite leer la UID,
- * verificar si está asociada a una matrícula y registrar asistencia si
- * corresponde.
- */
 @Service
+/**
+ * Servicio encargado de procesar los eventos generados por el lector NFC.
+ * Obtiene la UID leída y consulta si existe una matriculación válida en el
+ * curso escolar actual, devolviendo la información asociada al alumno.
+ */
 public class LectorEventoServicio {
 
-	@Autowired
-	private LectorNfcFuncionalidad lectorNfcFuncionalidad;
+    @Autowired
+    private LectorNfcFuncionalidad lectorNfcFuncionalidad;
 
-	@Autowired
-	private MatriculacionInterfaz matriculacionInterfaz;
+    @Autowired
+    private MatriculacionInterfaz matriculacionInterfaz;
 
-	@Autowired
-	private AsistenciaServicio asistenciaServicio;
+ 
+    /**
+     * Procesa el evento del lector NFC en el modo indicado. Consulta la última
+     * UID detectada y verifica si está asociada a una matriculación válida en
+     * el curso escolar actual.
+     *
+     * @param modo Modo de funcionamiento del lector
+     * @return DTO con la información del evento y del alumno si existe registro
+     */
+    public EventoLectorDto procesarEvento(String modo) {
 
-	/**
-	 * Procesa la UID leída por el lector NFC.
-	 *
-	 * @param modo "formulario" para solo consultar, cualquier otro valor para
-	 *             registrar asistencia.
-	 * @return Map con información de la UID y, si aplica, del alumno, curso y
-	 *         grupo.
-	 */
-	public Map<String, Object> procesarEvento(String modo) {
+        EventoLectorDto dto = new EventoLectorDto();
 
-		String uid = lectorNfcFuncionalidad.consumirUid();
-		if (uid == null) {
-			return Map.of("hayUid", false);
-		}
+        // SOLO CONSULTA (no consume)
+        String uid = lectorNfcFuncionalidad.obtenerUltimaUid();
+        if (uid == null) {
+            dto.setHayUid(false);
+            return dto;
+        }
 
-		String anioActual = Utilidades.obtenerAnioEscolarActual();
-		boolean esFormulario = "formulario".equals(modo);
+        dto.setHayUid(true);
+        dto.setUid(uid);
 
-		Optional<MatriculacionEntidad> matriculaOpt = matriculacionInterfaz
-				.findConAlumnoCursoGrupoByUidLlaveAndAnioEscolar(uid, anioActual);
+        String anioActual = Utilidades.obtenerAnioEscolarActual();
 
-		if (matriculaOpt.isEmpty()) {
-			return Map.of("hayUid", true, "registrado", false, "uid", uid);
-		}
+        Optional<MatriculacionEntidad> matriculaOpt =
+                matriculacionInterfaz.findConAlumnoCursoGrupoByUidLlaveAndAnioEscolar(uid, anioActual);
 
-		MatriculacionEntidad m = matriculaOpt.get();
+        if (matriculaOpt.isEmpty()) {
+            dto.setRegistrado(false);
+            return dto;
+        }
 
-		String nombreAlumno = m.getAlumno().getNombreAlumno() + " " + m.getAlumno().getApellidoAlumno();
+        MatriculacionEntidad m = matriculaOpt.get();
 
-		Map<String, Object> respuesta = new HashMap<>();
-		respuesta.put("hayUid", true);
-		respuesta.put("registrado", true);
-		respuesta.put("uid", uid);
-		respuesta.put("alumno", nombreAlumno);
-		respuesta.put("curso", m.getCurso().getNombreCurso());
-		respuesta.put("grupo", m.getGrupo().getNombreGrupo());
+        dto.setRegistrado(true);
+        dto.setAlumno(m.getAlumno().getNombreAlumno() + " " + m.getAlumno().getApellidoAlumno());
+        dto.setCurso(m.getCurso().getNombreCurso());
+        dto.setGrupo(m.getGrupo().getNombreGrupo());
 
-		if (!esFormulario) {
-			try {
-				asistenciaServicio.ficharPorMatriculacion(m.getIdMatriculacion());
-			} catch (RuntimeException e) {
-				respuesta.put("mensaje", e.getMessage());
-			}
-		}
+       
 
-		return respuesta;
-	}
+        return dto;
+    }
 }

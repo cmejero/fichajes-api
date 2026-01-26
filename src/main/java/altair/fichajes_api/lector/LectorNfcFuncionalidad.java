@@ -3,34 +3,32 @@ package altair.fichajes_api.lector;
 import org.springframework.stereotype.Service;
 
 /**
- * Servicio que gestiona la última UID leída por el lector NFC. Permite
- * almacenar temporalmente la UID y consumirla desde los endpoints.
+ * Servicio encargado de gestionar las UID leídas por el lector NFC.
+ * Almacena la última UID detectada de forma segura para su posterior consulta.
  */
 @Service
 public class LectorNfcFuncionalidad {
-	
-	// volatile asegura que, si varios hilos acceden a ultimoUid al mismo
-	// tiempo, siempre vean el valor más reciente.
-	private volatile String ultimoUid;
 
-	/**
-	 * Registra un nuevo UID detectado por el lector.
-	 *
-	 * @param uid UID detectada.
-	 */
-	public synchronized void nuevoUid(String uid) {
-		this.ultimoUid = uid;
-		// System.out.println("UID detectado: " + uid);
-	}
+	 private volatile String ultimaUid = null;
 
-	/**
-	 * Devuelve la última UID registrada y la marca como consumida.
-	 *
-	 * @return Última UID leída o null si no hay ninguna.
-	 */
-	public synchronized String consumirUid() {
-		String uid = ultimoUid;
-		ultimoUid = null;
-		return uid;
-	}
+	    /**
+	     * Registra una nueva UID leída por el lector NFC.
+	     * Solo se almacena si la UID no es nula ni está vacía.
+	     *
+	     * @param uid Identificador único leído por el lector NFC
+	     */
+	    public void nuevoUid(String uid) {
+	        if (uid != null && !uid.isBlank()) {
+	            ultimaUid = uid;
+	        }
+	    }
+
+	    /**
+	     * Obtiene la última UID registrada por el lector NFC.
+	     *
+	     * @return Última UID leída o null si no se ha registrado ninguna
+	     */
+	    public String obtenerUltimaUid() {
+	        return ultimaUid;
+	    }
 }

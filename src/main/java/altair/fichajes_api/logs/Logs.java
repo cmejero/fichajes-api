@@ -14,7 +14,7 @@ public class Logs {
 
    private static final DateTimeFormatter FORMATEADOR_FECHA = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-   private static final String RUTA_BASE_LOGS = "C:\\Users\\Carlo\\OneDrive\\Escritorio\\FICHEROS\\apiFichajesAltairLog\\";
+   private static final String RUTA_BASE_LOGS = "/home/altair/Desktop/Ficheros/Ficheros-API/";
 
    /**
     * Método que se encarga de escribir un mensaje en un archivo log.
